@@ -1,0 +1,130 @@
+/* Workouts Page Styles */
+.workouts-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.workouts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.workouts-title {
+  font-weight: 600;
+  color: #1976d2;
+}
+
+.create-btn {
+  background: linear-gradient(45deg, #1976d2 30%, #42a5f5 90%);
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: 600;
+  box-shadow: 0 3px 10px rgba(25, 118, 210, 0.3);
+}
+
+.workouts-error {
+  background-color: #ffebee;
+  border: 1px solid #e57373;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.workouts-empty {
+  text-align: center;
+  padding: 60px 20px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 16px;
+  border: 2px dashed #ccc;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  color: #ccc;
+  margin-bottom: 16px;
+}
+
+.empty-create-btn {
+  margin-top: 20px;
+  background: linear-gradient(45deg, #4caf50 30%, #8bc34a 90%);
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-weight: 600;
+}
+
+.workout-card {
+  height: 100%;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid #ff9800;
+}
+
+.workout-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.workout-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.workout-card-title {
+  font-weight: 600;
+  color: #333;
+  flex: 1;
+}
+
+.workout-card-actions {
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.workout-card:hover .workout-card-actions {
+  opacity: 1;
+}
+
+.workout-card-description {
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+.workout-card-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.view-btn {
+  color: #1976d2;
+  font-weight: 500;
+}
+
+.workouts-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: linear-gradient(45deg, #1976d2 30%, #42a5f5 90%);
+  z-index: 1000;
+}
+
+@media (max-width: 768px) {
+  .workouts-container {
+    padding: 16px;
+  }
+  
+  .workouts-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .workouts-title {
+    font-size: 1.8rem;
+  }
+}

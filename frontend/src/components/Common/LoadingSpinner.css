@@ -1,0 +1,52 @@
+/* Loading Spinner Component Styles */
+.loading-spinner-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  gap: 16px;
+}
+
+.loading-spinner {
+  color: #1976d2 !important;
+}
+
+.loading-message {
+  color: #666;
+  text-align: center;
+  margin-top: 8px !important;
+}
+
+/* Full page loading */
+.loading-spinner-fullpage {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.9);
+  z-index: 9999;
+}
+
+/* Inline loading for smaller components */
+.loading-spinner-inline {
+  min-height: 100px;
+  padding: 20px;
+}
+
+/* Animation for smooth appearance */
+.loading-spinner-container {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -1,0 +1,10 @@
+.exercises-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.exercises-title {
+  font-weight: 600;
+  color: #1976d2;
+}
