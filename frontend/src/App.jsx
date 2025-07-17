@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { AuthProvider } from './contexts/AuthContext.jsx';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
+import Landing from './pages/Landing/Landing.jsx';
 import Layout from './components/Layout/Layout.jsx';
 import Login from './pages/Auth/Login.jsx';
 import Register from './pages/Auth/Register.jsx';
@@ -46,9 +48,14 @@ function App() {
         <Router>
           <div className="app">
             <Routes>
+              <Route path="/" element={<Landing />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route path="/" element={<Layout />}>
+              <Route path="/app" element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }>
                 <Route index element={<Dashboard />} />
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="profile" element={<Profile />} />
@@ -64,6 +71,7 @@ function App() {
                 <Route path="programs/:id" element={<ProgramDetail />} />
                 <Route path="contributor" element={<ContributorArea />} />
               </Route>
+              <Route path="/" element={<Navigate to="/" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>

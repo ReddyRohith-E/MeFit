@@ -29,7 +29,7 @@ const Login = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (isAuthenticated()) {
-      navigate('/dashboard');
+      navigate('/app/dashboard');
     }
   }, [isAuthenticated, navigate]);
 
@@ -50,7 +50,7 @@ const Login = () => {
     const result = await login(formData.email, formData.password);
     
     if (result.success) {
-      navigate('/dashboard');
+      navigate('/app/dashboard');
     } else {
       setError(result.error);
     }

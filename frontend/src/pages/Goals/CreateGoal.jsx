@@ -25,7 +25,8 @@ import {
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs from 'dayjs';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import LoadingSpinner from '../../components/Common/LoadingSpinner.jsx';
 import { goalsAPI, workoutsAPI } from '../../utils/api.js';
@@ -41,8 +42,8 @@ const CreateGoal = () => {
     name: '',
     description: '',
     status: 'Not Started',
-    startDate: new Date(),
-    endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+    startDate: dayjs(),
+    endDate: dayjs().add(30, 'day'), // 30 days from now
     workouts: [],
     completed: false,
   });
@@ -187,7 +188,7 @@ const CreateGoal = () => {
   if (loading) return <LoadingSpinner />;
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Box className="create-goal-container">
         <Box className="create-goal-header">
           <IconButton
@@ -272,14 +273,13 @@ const CreateGoal = () => {
                     label="Start Date"
                     value={formData.startDate}
                     onChange={handleDateChange('startDate')}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        fullWidth
-                        variant="outlined"
-                        className="form-field"
-                      />
-                    )}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        variant: "outlined",
+                        className: "form-field"
+                      }
+                    }}
                   />
                 </Grid>
 
@@ -289,16 +289,15 @@ const CreateGoal = () => {
                     value={formData.endDate}
                     onChange={handleDateChange('endDate')}
                     minDate={formData.startDate}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        fullWidth
-                        variant="outlined"
-                        error={!!errors.endDate}
-                        helperText={errors.endDate}
-                        className="form-field"
-                      />
-                    )}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        variant: "outlined",
+                        error: !!errors.endDate,
+                        helperText: errors.endDate,
+                        className: "form-field"
+                      }
+                    }}
                   />
                 </Grid>
 

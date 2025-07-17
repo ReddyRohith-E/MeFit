@@ -1,6 +1,7 @@
 {
   "short_name": "MeFit",
   "name": "MeFit - Fitness Goals Management",
+  "description": "Weekly Workout Goals Management System",
   "icons": [
     {
       "src": "favicon.ico",
@@ -10,6 +11,9 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "theme_color": "#1976d2",
+  "background_color": "#f5f5f5",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "categories": ["health", "fitness", "lifestyle"]
 }

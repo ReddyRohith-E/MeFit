@@ -34,7 +34,7 @@ const Register = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (isAuthenticated()) {
-      navigate('/dashboard');
+      navigate('/app/dashboard');
     }
   }, [isAuthenticated, navigate]);
 
@@ -112,7 +112,7 @@ const Register = () => {
     const result = await register(registrationData);
     
     if (result.success) {
-      navigate('/dashboard');
+      navigate('/app/dashboard');
     } else {
       setError(result.error);
     }
