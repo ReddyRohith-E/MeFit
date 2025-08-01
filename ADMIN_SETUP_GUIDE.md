@@ -46,7 +46,7 @@ FRONTEND_URL=http://localhost:5173
 #### Frontend (.env)
 Create `frontend/.env` file:
 ```env
-REACT_APP_API_URL=http://localhost:5000/api
+VITE_API_URL=http://localhost:5000/api
 ```
 
 ### 3. Database Setup
@@ -147,7 +147,19 @@ npm run dev
 
 ### Common Issues
 
-#### 1. MongoDB Connection Error
+#### 1. "process is not defined" Error
+This error occurs when using the wrong environment variable format in Vite:
+```bash
+# ❌ Wrong (React format)
+REACT_APP_API_URL=http://localhost:5000/api
+
+# ✅ Correct (Vite format)
+VITE_API_URL=http://localhost:5000/api
+```
+
+**Solution**: Ensure your `frontend/.env` file uses `VITE_` prefix for environment variables.
+
+#### 2. MongoDB Connection Error
 ```bash
 # Check MongoDB status
 # For local MongoDB:
@@ -156,7 +168,7 @@ brew services start mongodb-community
 sudo systemctl start mongod
 ```
 
-#### 2. Port Already in Use
+#### 3. Port Already in Use
 ```bash
 # Find process using port 5000
 lsof -i :5000
@@ -164,7 +176,7 @@ lsof -i :5000
 kill -9 <PID>
 ```
 
-#### 3. Admin User Creation Fails
+#### 4. Admin User Creation Fails
 ```bash
 # Check MongoDB connection
 # Verify .env file exists
@@ -172,7 +184,7 @@ kill -9 <PID>
 npm run create-admin
 ```
 
-#### 4. CORS Errors
+#### 5. CORS Errors
 - Verify `FRONTEND_URL` in backend `.env`
 - Check if both servers are running
 - Clear browser cache
