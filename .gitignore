@@ -127,3 +127,7 @@ coverage/
 # Misc
 *.tgz
 *.tar.gz
+
+# Markdown files (ignore all except README.md)
+*.md
+!README.md

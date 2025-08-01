@@ -103,6 +103,57 @@ export const AuthProvider = ({ children }) => {
     return user?.role === 'Admin';
   };
 
+  const forgotPassword = async (email, newPassword) => {
+    try {
+      const response = await api.post('/auth/forgot-password', { email, newPassword });
+      return { 
+        success: true, 
+        message: response.data.message 
+      };
+    } catch (error) {
+      console.error('Forgot password failed:', error);
+      return { 
+        success: false, 
+        error: error.response?.data?.message || 'Failed to update password' 
+      };
+    }
+  };
+
+  // DEPRECATED: Token-based reset methods - no longer needed with direct password reset
+  /*
+  const resetPassword = async (token, password) => {
+    try {
+      const response = await api.post(`/auth/reset-password/${token}`, { password });
+      return { 
+        success: true, 
+        message: response.data.message 
+      };
+    } catch (error) {
+      console.error('Reset password failed:', error);
+      return { 
+        success: false, 
+        error: error.response?.data?.message || 'Failed to reset password' 
+      };
+    }
+  };
+
+  const validateResetToken = async (token) => {
+    try {
+      const response = await api.get(`/auth/reset-password/${token}`);
+      return { 
+        success: true, 
+        message: response.data.message 
+      };
+    } catch (error) {
+      console.error('Token validation failed:', error);
+      return { 
+        success: false, 
+        error: error.response?.data?.message || 'Invalid reset token' 
+      };
+    }
+  };
+  */
+
   const value = {
     user,
     loading,
@@ -115,6 +166,9 @@ export const AuthProvider = ({ children }) => {
     hasRole,
     isContributor,
     isAdmin,
+    forgotPassword,
+    // resetPassword, // Commented out - no longer needed
+    // validateResetToken, // Commented out - no longer needed
   };
 
   return (

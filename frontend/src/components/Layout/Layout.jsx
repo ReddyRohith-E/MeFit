@@ -32,6 +32,7 @@ import {
   Settings,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import { ThemeToggleButton } from '../Common/ThemeToggle.jsx';
 import './Layout.css';
 
 const drawerWidth = 240;
@@ -130,7 +131,11 @@ const Layout = () => {
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             MeFit - Fitness Goals Management
           </Typography>
-          <Box className="layout-user-menu">
+          
+          {/* Theme Toggle */}
+          <ThemeToggleButton />
+          
+          <Box className="layout-user-menu" sx={{ ml: 1 }}>
             <Button
               color="inherit"
               onClick={handleProfileMenuOpen}

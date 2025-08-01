@@ -55,6 +55,14 @@ const userSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
+  },
+  passwordResetToken: {
+    type: String,
+    default: null
+  },
+  passwordResetExpires: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true,
@@ -62,6 +70,8 @@ const userSchema = new mongoose.Schema({
     transform: function(doc, ret) {
       delete ret.password;
       delete ret.twoFactorSecret;
+      delete ret.passwordResetToken;
+      delete ret.passwordResetExpires;
       return ret;
     }
   }

@@ -1,16 +1,17 @@
-/* Register Page Styles */
+/* Register Page Styles - Theme-aware and device optimized */
 .register-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
+  /* Background handled by JSX for theme awareness */
 }
 
 .register-container {
   width: 100%;
   max-width: 600px;
+  z-index: 1;
 }
 
 .register-box {
@@ -21,14 +22,12 @@
 }
 
 .register-paper {
-  padding: 40px !important;
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 100%;
-  border-radius: 16px !important;
-  backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.95) !important;
+  /* Styling handled by JSX for theme awareness */
+  animation: slideIn 0.6s ease-out;
 }
 
 .register-header {
@@ -36,22 +35,8 @@
   align-items: center;
   margin-bottom: 16px;
   gap: 12px;
-}
-
-.register-icon {
-  font-size: 40px !important;
-  color: #1976d2 !important;
-}
-
-.register-brand {
-  color: #1976d2 !important;
-  font-weight: bold !important;
-}
-
-.register-title {
-  margin-bottom: 24px !important;
-  color: #333;
-  font-weight: 500 !important;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .register-error {
@@ -73,28 +58,7 @@
   font-size: 0.75rem;
 }
 
-.register-button {
-  margin-top: 24px !important;
-  margin-bottom: 16px !important;
-  height: 48px;
-  border-radius: 8px !important;
-  font-weight: 600 !important;
-  text-transform: none !important;
-  background: linear-gradient(45deg, #1976d2, #1565c0) !important;
-  transition: all 0.3s ease !important;
-}
-
-.register-button:hover {
-  background: linear-gradient(45deg, #1565c0, #0d47a1) !important;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(25, 118, 210, 0.3) !important;
-}
-
-.register-button:disabled {
-  background: #ccc !important;
-  transform: none;
-  box-shadow: none !important;
-}
+/* Button styling handled by JSX for theme awareness */
 
 .register-link-container {
   text-align: center;
@@ -102,16 +66,8 @@
 }
 
 .register-link {
-  color: #1976d2 !important;
-  text-decoration: none !important;
-  font-weight: 500 !important;
-  transition: color 0.3s ease;
   cursor: pointer;
-}
-
-.register-link:hover {
-  color: #1565c0 !important;
-  text-decoration: underline !important;
+  transition: all 0.2s ease;
 }
 
 /* Mobile responsive */
@@ -120,17 +76,9 @@
     padding: 10px;
   }
   
-  .register-paper {
-    padding: 24px !important;
-  }
-  
   .register-header {
     flex-direction: column;
     gap: 8px;
-  }
-  
-  .register-icon {
-    font-size: 32px !important;
   }
 }
 
@@ -140,41 +88,86 @@
   }
 }
 
-/* Animation for smooth entrance */
-.register-paper {
-  animation: slideIn 0.5s ease-out;
-}
-
+/* Enhanced animations for modern feel */
 @keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(40px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
-/* Password strength indicator styles */
+/* Smooth focus transitions for inputs */
+.register-input .MuiOutlinedInput-root {
+  transition: all 0.3s ease;
+}
+
+.register-input .MuiOutlinedInput-root:hover {
+  transform: translateY(-1px);
+}
+
+/* Loading state improvements */
+.register-form .MuiCircularProgress-root {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Password strength indicator styles - theme aware */
 .password-strength {
   margin-top: 8px;
   padding: 8px;
   border-radius: 4px;
   font-size: 0.75rem;
+  transition: all 0.3s ease;
 }
 
 .password-strength.weak {
-  background-color: #ffebee;
-  color: #d32f2f;
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 .password-strength.medium {
-  background-color: #fff3e0;
-  color: #f57c00;
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.2);
 }
 
 .password-strength.strong {
-  background-color: #e8f5e8;
-  color: #2e7d32;
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+/* Form grid improvements */
+.register-form .MuiGrid-container {
+  margin: 0;
+  width: 100%;
+}
+
+.register-form .MuiGrid-item {
+  padding-left: 0;
+  padding-top: 8px;
+}
+
+/* Enhanced error states */
+.register-input .MuiFormHelperText-root.Mui-error {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
 }

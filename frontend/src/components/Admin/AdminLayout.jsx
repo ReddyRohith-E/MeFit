@@ -41,6 +41,7 @@ import {
   Help
 } from '@mui/icons-material';
 import { adminApiService, adminTokenManager, handleApiError } from '../../services/adminAPI';
+import { ThemeToggleButton } from '../Common/ThemeToggle.jsx';
 
 const drawerWidth = 280;
 
@@ -325,6 +326,9 @@ const AdminLayout = () => {
 
           {/* Top Bar Actions */}
           <Box display="flex" alignItems="center" gap={1}>
+            {/* Theme Toggle */}
+            <ThemeToggleButton />
+
             <Tooltip title="Help & Documentation">
               <IconButton color="inherit">
                 <Help />

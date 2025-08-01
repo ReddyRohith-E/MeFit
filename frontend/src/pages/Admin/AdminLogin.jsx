@@ -14,7 +14,8 @@ import {
   Container,
   Avatar,
   CircularProgress,
-  Divider
+  Divider,
+  useTheme
 } from '@mui/material';
 import {
   Visibility,
@@ -24,9 +25,11 @@ import {
   Login as LoginIcon
 } from '@mui/icons-material';
 import { adminApiService, adminTokenManager, handleApiError } from '../../services/adminAPI';
+import { ThemeToggleButton } from '../../components/Common/ThemeToggle.jsx';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -82,27 +85,45 @@ const AdminLogin = () => {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        backgroundColor: 'background.default',
+        background: theme.palette.mode === 'dark' 
+          ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
+          : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        py: 3
+        py: 3,
+        position: 'relative'
       }}
     >
+      {/* Theme Toggle */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 16,
+          right: 16,
+          zIndex: 1000
+        }}
+      >
+        <ThemeToggleButton />
+      </Box>
+
       <Container maxWidth="sm">
         <Paper
           elevation={24}
           sx={{
             borderRadius: 4,
             overflow: 'hidden',
-            background: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(10px)'
+            backgroundColor: 'background.paper',
+            border: `1px solid ${theme.palette.divider}`,
+            backdropFilter: 'blur(10px)',
+            transition: 'all 0.3s ease'
           }}
         >
           {/* Header Section */}
           <Box
             sx={{
-              background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+              background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.light} 100%)`,
               color: 'white',
               p: 4,
               textAlign: 'center'
