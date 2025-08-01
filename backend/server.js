@@ -14,6 +14,10 @@ const workoutRoutes = require('./routes/workouts');
 const exerciseRoutes = require('./routes/exercises');
 const programRoutes = require('./routes/programs');
 
+// Admin routes
+const adminRoutes = require('./routes/admin');
+const adminAuthRoutes = require('./routes/adminAuth');
+
 const app = express();
 
 // Security middleware
@@ -52,6 +56,10 @@ app.use('/api/goals', goalRoutes);
 app.use('/api/workouts', workoutRoutes);
 app.use('/api/exercises', exerciseRoutes);
 app.use('/api/programs', programRoutes);
+
+// Admin routes (with stricter rate limiting)
+app.use('/api/admin/auth', authLimiter, adminAuthRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
