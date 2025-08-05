@@ -258,6 +258,3 @@ For technical support or questions about the project, please contact the develop
 This project is developed as part of the SITER Academy Accelerate Fullstack course curriculum. All rights reserved to SITER Academy and the development team.
 
 ---
-
-**Last Updated**: July 2025  
-**Version**: 1.0.0
