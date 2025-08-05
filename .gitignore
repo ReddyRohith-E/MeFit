@@ -129,6 +129,11 @@ coverage/
 *.tar.gz
 
 # Markdown files (ignore all except README.md)
+presentation_diagrams/
+uml_diagrams/
 *.md
 *.txt
+*.pptx
+*.py
+*.bat
 !README.md
