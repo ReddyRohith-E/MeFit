@@ -130,4 +130,5 @@ coverage/
 
 # Markdown files (ignore all except README.md)
 *.md
+*.txt
 !README.md
