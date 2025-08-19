@@ -262,7 +262,7 @@ const Login = () => {
                 type={showPassword ? 'text' : 'password'}
                 id="password"
                 autoComplete="current-password"
-                // value={formData.password}
+                value={formData.password}
                 onChange={handleChange}
                 disabled={loading}
                 className="login-input"
