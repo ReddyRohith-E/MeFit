@@ -82,6 +82,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { UniversalThemeContext } from '../../contexts/UniversalThemeContext';
+import ContributorRequestCard from '../../components/Profile/ContributorRequestCard';
 
 // Profile Header Component
 const ProfileHeader = ({ userProfile, onPhotoChange }) => {
@@ -1111,7 +1112,8 @@ const ProfileSettingsPage = () => {
     { label: 'Security', icon: Security },
     { label: 'Notifications', icon: Notifications },
     { label: 'Appearance', icon: Palette },
-    { label: 'Privacy', icon: Privacy }
+    { label: 'Privacy', icon: Privacy },
+    { label: 'Contributor', icon: PersonAdd }
   ];
 
   return (
@@ -1151,6 +1153,7 @@ const ProfileSettingsPage = () => {
         {tabValue === 2 && <NotificationSettingsTab />}
         {tabValue === 3 && <ThemeAppearanceTab />}
         {tabValue === 4 && <PrivacyTab />}
+        {tabValue === 5 && <ContributorRequestCard />}
       </Box>
 
       {/* Save Button */}

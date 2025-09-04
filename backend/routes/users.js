@@ -2,6 +2,7 @@ const express = require('express');
 const { body } = require('express-validator');
 const User = require('../models/User');
 const Profile = require('../models/Profile');
+const Notification = require('../models/Notification');
 const { auth, admin, selfOrAdmin } = require('../middleware/auth');
 const validate = require('../middleware/validation');
 
@@ -205,6 +206,13 @@ router.post('/:userId/update-password', auth, selfOrAdmin, updatePasswordValidat
 router.post('/:userId/request-contributor', auth, selfOrAdmin, async (req, res) => {
   try {
     const userId = req.params.userId;
+    const { applicationText } = req.body;
+
+    if (!applicationText || applicationText.trim().length < 50) {
+      return res.status(400).json({ 
+        message: 'Application text is required and must be at least 50 characters' 
+      });
+    }
 
     const user = await User.findById(userId);
     if (!user || !user.isActive) {
@@ -220,7 +228,24 @@ router.post('/:userId/request-contributor', auth, selfOrAdmin, async (req, res) 
     }
 
     user.contributorRequestPending = true;
+    user.contributorApplicationText = applicationText.trim();
+    user.contributorRequestDate = new Date();
     await user.save();
+
+    // Create notification for admins
+    await Notification.create({
+      type: 'contributor_request',
+      title: 'New Contributor Request',
+      message: `${user.firstName} ${user.lastName} has requested contributor access`,
+      userId: user._id,
+      userName: `${user.firstName} ${user.lastName}`,
+      userEmail: user.email,
+      priority: 'medium',
+      data: {
+        applicationText: applicationText.trim(),
+        requestDate: new Date()
+      }
+    });
 
     res.json({ message: 'Contributor request submitted successfully' });
   } catch (error) {

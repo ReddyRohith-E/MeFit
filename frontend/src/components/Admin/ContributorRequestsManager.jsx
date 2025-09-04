@@ -21,6 +21,7 @@ import {
   IconButton,
   Tooltip,
   Grid,
+  Paper
   } from '@mui/material';
 
 import {
@@ -38,6 +39,10 @@ const ContributorRequestsManager = () => {
   const [processing, setProcessing] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [applicationDialog, setApplicationDialog] = useState({
+    open: false,
+    request: null
+  });
   const [confirmDialog, setConfirmDialog] = useState({
     open: false,
     userId: null,
@@ -122,7 +127,22 @@ const ContributorRequestsManager = () => {
     });
   };
 
+  const openApplicationDialog = (request) => {
+    setApplicationDialog({
+      open: true,
+      request
+    });
+  };
+
+  const closeApplicationDialog = () => {
+    setApplicationDialog({
+      open: false,
+      request: null
+    });
+  };
+
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -202,9 +222,10 @@ const ContributorRequestsManager = () => {
                 <TableRow>
                   <TableCell>User</TableCell>
                   <TableCell>Email</TableCell>
-                  <TableCell>Joined</TableCell>
+                  <TableCell>Request Date</TableCell>
                   <TableCell>Last Login</TableCell>
                   <TableCell>Activity</TableCell>
+                  <TableCell>Application</TableCell>
                   <TableCell align="center">Actions</TableCell>
                 </TableRow>
               </TableHead>
@@ -231,7 +252,7 @@ const ContributorRequestsManager = () => {
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">
-                        {formatDate(request.createdAt)}
+                        {formatDate(request.contributorRequestDate || request.createdAt)}
                       </Typography>
                     </TableCell>
                     <TableCell>
@@ -252,6 +273,16 @@ const ContributorRequestsManager = () => {
                       <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
                         {request.activityLevel} goals created
                       </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={() => openApplicationDialog(request)}
+                        sx={{ minWidth: 'auto' }}
+                      >
+                        View
+                      </Button>
                     </TableCell>
                     <TableCell align="center">
                       <Box display="flex" gap={1} justifyContent="center">
@@ -295,6 +326,108 @@ const ContributorRequestsManager = () => {
             </Table>
           </TableContainer>
         )}
+
+        {/* Application Details Dialog */}
+        <Dialog
+          open={applicationDialog.open}
+          onClose={closeApplicationDialog}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>
+            <Box display="flex" alignItems="center" gap={2}>
+              <PersonIcon color="primary" />
+              <Box>
+                <Typography variant="h6">
+                  Contributor Application
+                </Typography>
+                {applicationDialog.request && (
+                  <Typography variant="subtitle2" color="text.secondary">
+                    {applicationDialog.request.firstName} {applicationDialog.request.lastName}
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+          </DialogTitle>
+          <DialogContent>
+            {applicationDialog.request && (
+              <Box>
+                <Box mb={3}>
+                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                    Applicant Information
+                  </Typography>
+                  <Box display="flex" gap={4} mb={2}>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">Email</Typography>
+                      <Typography variant="body2">{applicationDialog.request.email}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">Request Date</Typography>
+                      <Typography variant="body2">
+                        {formatDate(applicationDialog.request.contributorRequestDate)}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">Activity Level</Typography>
+                      <Chip
+                        label={getActivityLevelText(applicationDialog.request.activityLevel)}
+                        color={getActivityLevelColor(applicationDialog.request.activityLevel)}
+                        size="small"
+                      />
+                    </Box>
+                  </Box>
+                </Box>
+
+                <Box mb={3}>
+                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                    Application Message
+                  </Typography>
+                  <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
+                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                      {applicationDialog.request.contributorApplicationText || 'No application message provided.'}
+                    </Typography>
+                  </Paper>
+                </Box>
+
+                <Box display="flex" gap={2} justifyContent="center">
+                  <Button
+                    variant="contained"
+                    color="success"
+                    startIcon={<CheckIcon />}
+                    onClick={() => {
+                      openConfirmDialog(
+                        applicationDialog.request._id, 
+                        'approve', 
+                        `${applicationDialog.request.firstName} ${applicationDialog.request.lastName}`
+                      );
+                      closeApplicationDialog();
+                    }}
+                  >
+                    Approve Request
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    startIcon={<CloseIcon />}
+                    onClick={() => {
+                      openConfirmDialog(
+                        applicationDialog.request._id, 
+                        'deny', 
+                        `${applicationDialog.request.firstName} ${applicationDialog.request.lastName}`
+                      );
+                      closeApplicationDialog();
+                    }}
+                  >
+                    Deny Request
+                  </Button>
+                </Box>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={closeApplicationDialog}>Close</Button>
+          </DialogActions>
+        </Dialog>
 
         {/* Confirmation Dialog */}
         <Dialog

@@ -1,16 +1,14 @@
 {
   "name": "mefit-backend",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "MeFit Backend API",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "nodemon server.js",
     "dev": "nodemon server.js",
     "test": "jest",
-    "seed": "node scripts/seedDatabase.js",
-    "seed-enhanced": "node scripts/enhancedSeedDatabase.js",
-    "seed-dev": "NODE_ENV=development node scripts/seedDatabase.js",
-    "seed-enhanced-dev": "NODE_ENV=development node scripts/enhancedSeedDatabase.js"
+    "seed": "node scripts/seed.js",
+    "cleanDB": "node scripts/cleanDB.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

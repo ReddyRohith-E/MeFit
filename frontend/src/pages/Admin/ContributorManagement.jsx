@@ -57,6 +57,7 @@ import {
   NotificationsActive
 } from '@mui/icons-material';
 import { adminApiService, handleApiError } from '../../services/adminAPI';
+import ContributorRequestsManager from '../../components/Admin/ContributorRequestsManager';
 
 // Stats Card Component
 const StatsCard = ({ title, value, icon: Icon, color, subtitle, trend }) => {
@@ -604,10 +605,7 @@ const ContributorManagement = () => {
           )}
           
           {tabValue === 1 && (
-            <UserTable
-              users={filteredData()}
-              emptyMessage="No pending requests"
-            />
+            <ContributorRequestsManager />
           )}
         </CardContent>
       </Card>

@@ -33,7 +33,7 @@ import ContributorManagement from './pages/Admin/ContributorManagement.jsx';
 import ContentManagement from './pages/Admin/ContentManagement.jsx';
 import AnalyticsPage from './pages/Admin/AnalyticsPage.jsx';
 import AdminSettingsPage from './pages/Admin/AdminSettingsPage.jsx';
-import AdminNotificationsManager from './pages/Admin/AdminNotificationsManager.jsx';
+import AdminNotifications from './pages/Admin/AdminNotifications.jsx';
 import ProfileSettingsPage from './pages/Profile/ProfileSettingsPage.jsx';
 import ThemeShowcase from './pages/ThemeShowcase/ThemeShowcase.jsx';
 
@@ -96,7 +96,7 @@ function App() {
                 <Route path="content" element={<ContentManagement />} />
                 <Route path="analytics" element={<AnalyticsPage />} />
                 <Route path="settings" element={<AdminSettingsPage />} />
-                <Route path="notifications" element={<AdminNotificationsManager />} />
+                <Route path="notifications" element={<AdminNotifications />} />
               </Route>
 
               {/* Fallback Routes */}

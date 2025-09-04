@@ -5,6 +5,7 @@ const Goal = require('../models/Goal');
 const Exercise = require('../models/Exercise');
 const Workout = require('../models/Workout');
 const Program = require('../models/Program');
+const Notification = require('../models/Notification');
 const { verifyAdmin } = require('../middleware/adminAuth');
 
 // Apply admin middleware to all routes
@@ -335,7 +336,9 @@ router.patch('/users/:userId/role', async (req, res) => {
       { 
         isAdmin: Boolean(isAdmin),
         isContributor: Boolean(isContributor),
-        contributorRequestPending: false // Clear pending request
+        contributorRequestPending: false, // Clear pending request
+        contributorApplicationText: null, // Clear application text
+        contributorRequestDate: null // Clear request date
       },
       { new: true }
     ).select('-password -twoFactorSecret');
@@ -405,8 +408,8 @@ router.delete('/users/:userId', async (req, res) => {
 router.get('/contributor-requests', async (req, res) => {
   try {
     const requests = await User.find({ contributorRequestPending: true })
-      .select('firstName lastName email createdAt lastLogin')
-      .sort({ createdAt: -1 });
+      .select('firstName lastName email createdAt lastLogin contributorApplicationText contributorRequestDate')
+      .sort({ contributorRequestDate: -1 });
 
     // Enhance with user activity data
     const enhancedRequests = await Promise.all(
@@ -445,7 +448,9 @@ router.patch('/contributor-requests/:userId/:action', async (req, res) => {
     }
 
     const updateData = {
-      contributorRequestPending: false
+      contributorRequestPending: false,
+      contributorApplicationText: null,
+      contributorRequestDate: null
     };
 
     if (action === 'approve') {
@@ -610,6 +615,141 @@ router.get('/content/stats', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching content statistics',
+      error: error.message
+    });
+  }
+});
+
+// ============= NOTIFICATIONS =============
+// Get all notifications
+router.get('/notifications', async (req, res) => {
+  try {
+    const { page = 1, limit = 20, type, isRead } = req.query;
+    const skip = (page - 1) * limit;
+
+    // Build filter
+    const filter = {};
+    if (type) filter.type = type;
+    if (isRead !== undefined) filter.isRead = isRead === 'true';
+
+    const [notifications, total] = await Promise.all([
+      Notification.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .populate('userId', 'firstName lastName email'),
+      Notification.countDocuments(filter)
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        notifications,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(total / limit),
+          totalItems: total,
+          hasNext: page * limit < total,
+          hasPrev: page > 1
+        }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching notifications',
+      error: error.message
+    });
+  }
+});
+
+// Get unread notification count
+router.get('/notifications/unread-count', async (req, res) => {
+  try {
+    const count = await Notification.countDocuments({ isRead: false });
+    res.json({
+      success: true,
+      data: { count }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching unread count',
+      error: error.message
+    });
+  }
+});
+
+// Mark notification as read
+router.patch('/notifications/:id/read', async (req, res) => {
+  try {
+    const notification = await Notification.findByIdAndUpdate(
+      req.params.id,
+      { isRead: true },
+      { new: true }
+    );
+
+    if (!notification) {
+      return res.status(404).json({
+        success: false,
+        message: 'Notification not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: notification
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error marking notification as read',
+      error: error.message
+    });
+  }
+});
+
+// Mark all notifications as read
+router.patch('/notifications/read-all', async (req, res) => {
+  try {
+    await Notification.updateMany(
+      { isRead: false },
+      { isRead: true }
+    );
+
+    res.json({
+      success: true,
+      message: 'All notifications marked as read'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error marking all notifications as read',
+      error: error.message
+    });
+  }
+});
+
+// Delete notification
+router.delete('/notifications/:id', async (req, res) => {
+  try {
+    const notification = await Notification.findByIdAndDelete(req.params.id);
+
+    if (!notification) {
+      return res.status(404).json({
+        success: false,
+        message: 'Notification not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Notification deleted successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting notification',
       error: error.message
     });
   }

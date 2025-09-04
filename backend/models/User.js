@@ -36,6 +36,14 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  contributorApplicationText: {
+    type: String,
+    default: null
+  },
+  contributorRequestDate: {
+    type: Date,
+    default: null
+  },
   profilePicture: {
     type: String,
     default: null
