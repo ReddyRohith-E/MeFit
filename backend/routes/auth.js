@@ -1,6 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const speakeasy = require('speakeasy');
 const { body } = require('express-validator');
 const User = require('../models/User');
 const Profile = require('../models/Profile');
@@ -96,7 +97,7 @@ router.post('/register', registerValidation, validate, async (req, res) => {
 // POST /api/auth/login
 router.post('/login', loginValidation, validate, async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, twoFactorToken } = req.body;
 
     // Find user
     const user = await User.findOne({ email, isActive: true });
@@ -108,6 +109,33 @@ router.post('/login', loginValidation, validate, async (req, res) => {
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // Check if 2FA is enabled
+    if (user.twoFactorEnabled) {
+      if (!twoFactorToken) {
+        return res.status(200).json({
+          requiresTwoFactor: true,
+          userId: user._id,
+          message: 'Please provide your 2FA token'
+        });
+      }
+
+      // Verify 2FA token
+      const verified = speakeasy.totp.verify({
+        secret: user.twoFactorSecret,
+        encoding: 'base32',
+        token: twoFactorToken,
+        window: 2
+      });
+
+      if (!verified) {
+        return res.status(401).json({ 
+          message: 'Invalid 2FA token',
+          requiresTwoFactor: true,
+          userId: user._id
+        });
+      }
     }
 
     // Update last login
@@ -131,7 +159,8 @@ router.post('/login', loginValidation, validate, async (req, res) => {
         isAdmin: user.isAdmin,
         isContributor: user.isContributor,
         hasProfile: !!profile,
-        lastLogin: user.lastLogin
+        lastLogin: user.lastLogin,
+        twoFactorEnabled: user.twoFactorEnabled
       }
     });
   } catch (error) {
@@ -157,7 +186,8 @@ router.get('/me', auth, async (req, res) => {
         contributorRequestPending: req.user.contributorRequestPending,
         hasProfile: !!profile,
         profilePicture: req.user.profilePicture,
-        lastLogin: req.user.lastLogin
+        lastLogin: req.user.lastLogin,
+        twoFactorEnabled: req.user.twoFactorEnabled
       }
     });
   } catch (error) {

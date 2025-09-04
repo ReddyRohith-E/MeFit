@@ -13,6 +13,7 @@ const goalRoutes = require('./routes/goals');
 const workoutRoutes = require('./routes/workouts');
 const exerciseRoutes = require('./routes/exercises');
 const programRoutes = require('./routes/programs');
+const twoFactorRoutes = require('./routes/twoFactor');
 
 // Admin routes
 const adminRoutes = require('./routes/admin');
@@ -56,6 +57,7 @@ app.use('/api/goals', goalRoutes);
 app.use('/api/workouts', workoutRoutes);
 app.use('/api/exercises', exerciseRoutes);
 app.use('/api/programs', programRoutes);
+app.use('/api/2fa', twoFactorRoutes);
 
 // Admin routes (with stricter rate limiting)
 app.use('/api/admin/auth', authLimiter, adminAuthRoutes);

@@ -38,14 +38,15 @@ const goalValidation = [
 ];
 
 // Helper function to check if goal is realistic based on user profile
-const checkGoalRealism = async (userId, goalData) => {
+const checkAdvancedGoalRealism = async (userId, goalData) => {
   try {
     const profile = await Profile.findOne({ user: userId });
     if (!profile) {
-      return { isRealistic: true, warnings: [] };
+      return { isRealistic: true, warnings: [], suggestions: [] };
     }
 
     const warnings = [];
+    const suggestions = [];
     const { workouts, startDate, endDate } = goalData;
     
     // Calculate goal intensity
@@ -53,42 +54,182 @@ const checkGoalRealism = async (userId, goalData) => {
     const workoutsCount = workouts ? workouts.length : 0;
     const workoutsPerWeek = (workoutsCount / goalDuration) * 7;
 
+    // Calculate fitness score based on multiple factors
+    const fitnessScore = calculateFitnessScore(profile);
+    
+    // Advanced fitness level checking
+    if (fitnessScore < 3 && workoutsPerWeek > 3) {
+      warnings.push('Based on your fitness evaluation, consider starting with 2-3 workouts per week');
+      suggestions.push('Try our "Zero to Hero" beginner program');
+    }
+
     // Check based on fitness level
     let maxRecommendedWorkouts = 7;
+    let recommendedProgram = null;
+    
     switch (profile.fitnessLevel) {
       case 'beginner':
         maxRecommendedWorkouts = 4;
+        recommendedProgram = 'Zero to Hero - Complete Beginner';
+        if (workoutsPerWeek > maxRecommendedWorkouts) {
+          warnings.push(`As a beginner, we recommend starting with ${maxRecommendedWorkouts} workouts per week`);
+          suggestions.push(`Consider the "${recommendedProgram}" program`);
+        }
         break;
       case 'intermediate':
         maxRecommendedWorkouts = 5;
+        recommendedProgram = 'Beginner Fitness Journey';
+        if (workoutsPerWeek > maxRecommendedWorkouts) {
+          warnings.push(`For intermediate fitness level, ${maxRecommendedWorkouts} workouts per week is optimal`);
+        }
         break;
       case 'advanced':
         maxRecommendedWorkouts = 7;
+        if (workoutsPerWeek > maxRecommendedWorkouts) {
+          warnings.push('Even advanced athletes benefit from rest days for recovery');
+        }
         break;
     }
 
-    if (workoutsPerWeek > maxRecommendedWorkouts) {
-      warnings.push(`Based on your ${profile.fitnessLevel} fitness level, we recommend no more than ${maxRecommendedWorkouts} workouts per week`);
-    }
-
-    // Check for medical conditions
+    // Medical conditions consideration
     if (profile.medicalConditions && profile.medicalConditions.length > 0) {
-      warnings.push('Please consult with a healthcare provider before starting this goal due to your medical conditions');
+      warnings.push('Please consult with a healthcare provider before starting this goal');
+      suggestions.push('Consider low-impact exercises and yoga programs');
+      
+      // Specific condition recommendations
+      profile.medicalConditions.forEach(condition => {
+        if (condition.condition.toLowerCase().includes('back')) {
+          suggestions.push('Focus on core strengthening and avoid heavy lifting');
+        }
+        if (condition.condition.toLowerCase().includes('knee')) {
+          suggestions.push('Choose low-impact activities like swimming or cycling');
+        }
+      });
     }
 
-    // Check activity level
+    // Activity level assessment
+    const activityMultiplier = getActivityMultiplier(profile.activityLevel);
+    const adjustedMaxWorkouts = Math.floor(maxRecommendedWorkouts * activityMultiplier);
+    
     if (profile.activityLevel === 'sedentary' && workoutsPerWeek > 3) {
       warnings.push('Consider starting with fewer workouts per week given your current activity level');
+      suggestions.push('Gradually increase workout frequency as your fitness improves');
+    }
+
+    // Age-based recommendations
+    const age = calculateAge(profile.dateOfBirth);
+    if (age > 50 && workoutsPerWeek > 4) {
+      warnings.push('Consider additional recovery time between workouts');
+      suggestions.push('Include flexibility and mobility work in your routine');
+    }
+
+    // Duration and intensity checks
+    if (workouts && workouts.length > 0) {
+      const avgEstimatedDuration = await calculateAverageWorkoutDuration(workouts);
+      const totalWeeklyTime = avgEstimatedDuration * workoutsPerWeek;
+      
+      if (totalWeeklyTime > profile.preferences?.workoutDuration * 7) {
+        warnings.push('This goal requires more time than your preferred workout duration');
+        suggestions.push('Consider shorter, more intense workouts or adjust your time commitment');
+      }
+    }
+
+    // Goal alignment with user preferences
+    if (profile.fitnessGoals && goalData.type) {
+      const goalAlignment = checkGoalAlignment(profile.fitnessGoals, goalData);
+      if (!goalAlignment.aligned) {
+        suggestions.push(goalAlignment.suggestion);
+      }
     }
 
     return {
       isRealistic: warnings.length === 0,
-      warnings
+      warnings,
+      suggestions,
+      fitnessScore,
+      recommendedProgram
     };
   } catch (error) {
-    console.error('Goal realism check error:', error);
-    return { isRealistic: true, warnings: [] };
+    console.error('Advanced goal realism check error:', error);
+    return { isRealistic: true, warnings: [], suggestions: [] };
   }
+};
+
+// Helper functions for advanced realism checking
+const calculateFitnessScore = (profile) => {
+  let score = 0;
+  
+  // Fitness level scoring
+  switch (profile.fitnessLevel) {
+    case 'beginner': score += 1; break;
+    case 'intermediate': score += 3; break;
+    case 'advanced': score += 5; break;
+  }
+  
+  // Activity level scoring
+  switch (profile.activityLevel) {
+    case 'sedentary': score += 0; break;
+    case 'lightly_active': score += 1; break;
+    case 'moderately_active': score += 2; break;
+    case 'very_active': score += 3; break;
+    case 'extremely_active': score += 4; break;
+  }
+  
+  // Medical conditions penalty
+  if (profile.medicalConditions && profile.medicalConditions.length > 0) {
+    score -= profile.medicalConditions.length * 0.5;
+  }
+  
+  return Math.max(0, score);
+};
+
+const getActivityMultiplier = (activityLevel) => {
+  switch (activityLevel) {
+    case 'sedentary': return 0.5;
+    case 'lightly_active': return 0.7;
+    case 'moderately_active': return 1.0;
+    case 'very_active': return 1.2;
+    case 'extremely_active': return 1.5;
+    default: return 1.0;
+  }
+};
+
+const calculateAge = (dateOfBirth) => {
+  const today = new Date();
+  const birthDate = new Date(dateOfBirth);
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  
+  return age;
+};
+
+const calculateAverageWorkoutDuration = async (workouts) => {
+  const workoutIds = workouts.map(w => w.workout);
+  const workoutDetails = await Workout.find({ _id: { $in: workoutIds } });
+  
+  const totalDuration = workoutDetails.reduce((sum, workout) => sum + (workout.estimatedDuration || 45), 0);
+  return workoutDetails.length > 0 ? totalDuration / workoutDetails.length : 45;
+};
+
+const checkGoalAlignment = (userGoals, goalData) => {
+  // Simple goal alignment check - can be enhanced
+  const alignmentMap = {
+    'weight_loss': ['cardio', 'hiit'],
+    'muscle_gain': ['strength', 'powerlifting'],
+    'endurance': ['cardio', 'running'],
+    'flexibility': ['yoga', 'pilates'],
+    'general_fitness': ['strength', 'cardio', 'yoga']
+  };
+  
+  // This is a simplified version - in practice, you'd analyze the actual workouts
+  return {
+    aligned: true,
+    suggestion: 'Consider programs that align with your fitness goals'
+  };
 };
 
 // GET /api/goals - Get user's goals
@@ -231,7 +372,7 @@ router.post('/', auth, goalValidation, validate, async (req, res) => {
     }
 
     // Check goal realism
-    const realismCheck = await checkGoalRealism(req.user._id, {
+    const realismCheck = await checkAdvancedGoalRealism(req.user._id, {
       ...goalData,
       workouts
     });
