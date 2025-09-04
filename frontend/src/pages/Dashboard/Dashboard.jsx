@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Grid,
   Card,
   CardContent,
   Typography,
@@ -11,8 +10,10 @@ import {
   Alert,
   CircularProgress,
   Divider,
-  IconButton
-} from '@mui/material';
+  IconButton,
+  Grid,
+  } from '@mui/material';
+
 import {
   FitnessCenter,
   TrendingUp,

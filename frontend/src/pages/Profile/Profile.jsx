@@ -6,7 +6,6 @@ import {
   Card,
   CardContent,
   Button,
-  Grid,
   Avatar,
   Chip,
   List,
@@ -20,7 +19,9 @@ import {
   DialogContent,
   DialogActions,
   Paper,
-} from '@mui/material';
+  Grid,
+  } from '@mui/material';
+
 import {
   Edit as EditIcon,
   Person as PersonIcon,

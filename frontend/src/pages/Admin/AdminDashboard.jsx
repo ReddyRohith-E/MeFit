@@ -20,7 +20,8 @@ import {
   TableRow,
   LinearProgress,
   Tooltip,
-  useTheme
+  useTheme,
+  Divider
 } from '@mui/material';
 import {
   People,
@@ -37,9 +38,17 @@ import {
   Group,
   Star,
   Warning,
-  Visibility
+  Visibility,
+  Analytics,
+  ManageAccounts,
+  Create,
+  Settings,
+  Notifications,
+  Dashboard,
+  ArrowForward
 } from '@mui/icons-material';
 import { adminApiService, handleApiError } from '../../services/adminAPI';
+import { useNavigate } from 'react-router-dom';
 
 // Enhanced StatCard with animations and better visuals
 const StatCard = ({ 
@@ -284,8 +293,110 @@ const GoalStatsCard = ({ goalsByStatus, loading }) => {
   );
 };
 
+// Quick Actions Card Component
+const QuickActionsCard = () => {
+  const navigate = useNavigate();
+  
+  const actions = [
+    {
+      title: 'User Management',
+      description: 'Manage users, roles, and permissions',
+      icon: ManageAccounts,
+      color: 'primary',
+      path: '/admin/users'
+    },
+    {
+      title: 'Contributors',
+      description: 'Review contributor requests and manage contributors',
+      icon: PersonAdd,
+      color: 'secondary',
+      path: '/admin/contributors'
+    },
+    {
+      title: 'Content Management',
+      description: 'Manage exercises, workouts, and programs',
+      icon: Create,
+      color: 'info',
+      path: '/admin/content'
+    },
+    {
+      title: 'Analytics',
+      description: 'View detailed analytics and reports',
+      icon: Analytics,
+      color: 'success',
+      path: '/admin/analytics'
+    },
+    {
+      title: 'Settings',
+      description: 'Configure system settings and preferences',
+      icon: Settings,
+      color: 'warning',
+      path: '/admin/settings'
+    },
+    {
+      title: 'Notifications',
+      description: 'Manage notification templates and campaigns',
+      icon: Notifications,
+      color: 'error',
+      path: '/admin/notifications'
+    }
+  ];
+
+  return (
+    <Card>
+      <CardContent>
+        <Typography variant="h6" fontWeight={600} mb={3}>
+          Quick Actions
+        </Typography>
+        <Grid container spacing={2}>
+          {actions.map((action, index) => (
+            <Grid item xs={12} sm={6} md={4} key={index}>
+              <Card
+                sx={{
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: 3
+                  }
+                }}
+                onClick={() => navigate(action.path)}
+              >
+                <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                  <Avatar
+                    sx={{
+                      bgcolor: `${action.color}.light`,
+                      color: `${action.color}.contrastText`,
+                      width: 48,
+                      height: 48,
+                      mx: 'auto',
+                      mb: 2
+                    }}
+                  >
+                    <action.icon />
+                  </Avatar>
+                  <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                    {action.title}
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary" sx={{ fontSize: '0.875rem' }}>
+                    {action.description}
+                  </Typography>
+                  <Box mt={1}>
+                    <ArrowForward sx={{ fontSize: 16, color: 'text.secondary' }} />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </CardContent>
+    </Card>
+  );
+};
+
 // Main Admin Dashboard Component
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -462,6 +573,13 @@ const AdminDashboard = () => {
             subtitle="Contributor requests"
             loading={loading}
           />
+        </Grid>
+      </Grid>
+
+      {/* Quick Actions Section */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12}>
+          <QuickActionsCard />
         </Grid>
       </Grid>
 

@@ -15,9 +15,10 @@ import {
   Step,
   StepLabel,
   CircularProgress,
+  Chip,
   Grid,
-  Chip
-} from '@mui/material';
+  } from '@mui/material';
+
 import {
   Security as SecurityIcon,
   CheckCircle as CheckCircleIcon,

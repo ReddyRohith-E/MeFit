@@ -4,6 +4,8 @@ import { CssBaseline } from '@mui/material';
 
 const ThemeContext = createContext();
 
+export const UniversalThemeContext = ThemeContext;
+
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (context === undefined) {

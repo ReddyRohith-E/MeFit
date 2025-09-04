@@ -29,70 +29,83 @@ import AdminLayout from './components/Admin/AdminLayout.jsx';
 import AdminProtectedRoute from './components/Admin/AdminProtectedRoute.jsx';
 import AdminDashboard from './pages/Admin/AdminDashboard.jsx';
 import UserManagement from './pages/Admin/UserManagement.jsx';
+import ContributorManagement from './pages/Admin/ContributorManagement.jsx';
+import ContentManagement from './pages/Admin/ContentManagement.jsx';
+import AnalyticsPage from './pages/Admin/AnalyticsPage.jsx';
+import AdminSettingsPage from './pages/Admin/AdminSettingsPage.jsx';
+import AdminNotificationsManager from './pages/Admin/AdminNotificationsManager.jsx';
+import ProfileSettingsPage from './pages/Profile/ProfileSettingsPage.jsx';
 import ThemeShowcase from './pages/ThemeShowcase/ThemeShowcase.jsx';
+
+// Notification Provider
+import { NotificationProvider } from './components/Common/NotificationSystem.jsx';
 
 import './App.css';
 
 function App() {
   return (
     <UniversalThemeProvider>
-      <AuthProvider>
-        <Router>
-          <div className="app">
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Landing />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password/:token" element={<ResetPassword />} />
-              <Route path="/theme-showcase" element={<ThemeShowcase />} />
+      <NotificationProvider>
+        <AuthProvider>
+          <Router>
+            <div className="app">
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<Landing />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password/:token" element={<ResetPassword />} />
+                <Route path="/theme-showcase" element={<ThemeShowcase />} />
+                
+                {/* Main App Routes */}
+                <Route path="/app" element={
+                  <ProtectedRoute>
+                    <Layout />
+                  </ProtectedRoute>
+                }>
+                <Route index element={<Dashboard />} />
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="profile" element={<Profile />} />
+                <Route path="profile/create" element={<CreateProfile />} />
+                <Route path="profile/settings" element={<ProfileSettingsPage />} />
+                <Route path="goals" element={<Goals />} />
+                <Route path="goals/create" element={<CreateGoal />} />
+                <Route path="goals/:id" element={<GoalDetail />} />
+                <Route path="workouts" element={<Workouts />} />
+                <Route path="workouts/:id" element={<WorkoutDetail />} />
+                <Route path="exercises" element={<Exercises />} />
+                <Route path="exercises/:id" element={<ExerciseDetail />} />
+                <Route path="programs" element={<Programs />} />
+                <Route path="programs/:id" element={<ProgramDetail />} />
+                <Route path="contributor" element={<ContributorArea />} />
+              </Route>
+
+              {/* Admin Routes */}
+              <Route path="/admin/login" element={<AdminLogin />} />
               
-              {/* Main App Routes */}
-              <Route path="/app" element={
-                <ProtectedRoute>
-                  <Layout />
-                </ProtectedRoute>
+              <Route path="/admin" element={
+                <AdminProtectedRoute>
+                  <AdminLayout />
+                </AdminProtectedRoute>
               }>
-              <Route index element={<Dashboard />} />
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="profile" element={<Profile />} />
-              <Route path="profile/create" element={<CreateProfile />} />
-              <Route path="goals" element={<Goals />} />
-              <Route path="goals/create" element={<CreateGoal />} />
-              <Route path="goals/:id" element={<GoalDetail />} />
-              <Route path="workouts" element={<Workouts />} />
-              <Route path="workouts/:id" element={<WorkoutDetail />} />
-              <Route path="exercises" element={<Exercises />} />
-              <Route path="exercises/:id" element={<ExerciseDetail />} />
-              <Route path="programs" element={<Programs />} />
-              <Route path="programs/:id" element={<ProgramDetail />} />
-              <Route path="contributor" element={<ContributorArea />} />
-            </Route>
+                <Route index element={<Navigate to="/admin/dashboard" replace />} />
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="users" element={<UserManagement />} />
+                <Route path="contributors" element={<ContributorManagement />} />
+                <Route path="content" element={<ContentManagement />} />
+                <Route path="analytics" element={<AnalyticsPage />} />
+                <Route path="settings" element={<AdminSettingsPage />} />
+                <Route path="notifications" element={<AdminNotificationsManager />} />
+              </Route>
 
-            {/* Admin Routes */}
-            <Route path="/admin/login" element={<AdminLogin />} />
-            
-            <Route path="/admin" element={
-              <AdminProtectedRoute>
-                <AdminLayout />
-              </AdminProtectedRoute>
-            }>
-              <Route index element={<Navigate to="/admin/dashboard" replace />} />
-              <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="users" element={<UserManagement />} />
-              <Route path="contributors" element={<div>Contributor Management Coming Soon</div>} />
-              <Route path="content" element={<div>Content Management Coming Soon</div>} />
-              <Route path="analytics" element={<div>Analytics Coming Soon</div>} />
-              <Route path="settings" element={<div>Settings Coming Soon</div>} />
-            </Route>
-
-            {/* Fallback Routes */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </div>
-      </Router>
-      </AuthProvider>
+              {/* Fallback Routes */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </div>
+        </Router>
+        </AuthProvider>
+      </NotificationProvider>
     </UniversalThemeProvider>
   );
 }

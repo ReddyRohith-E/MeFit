@@ -34,7 +34,7 @@ import {
   FitnessCenter,
   Assignment,
   AdminPanelSettings,
-  Notifications,
+  Notifications as NotificationsIcon,
   Search,
   MoreVert,
   Schedule,
@@ -42,6 +42,7 @@ import {
 } from '@mui/icons-material';
 import { adminApiService, adminTokenManager, handleApiError } from '../../services/adminAPI';
 import { ThemeToggleButton } from '../Common/ThemeToggle.jsx';
+import NotificationsComponent from '../Common/NotificationSystem.jsx';
 
 const drawerWidth = 280;
 
@@ -96,6 +97,12 @@ const AdminLayout = () => {
       icon: Settings,
       path: '/admin/settings',
       color: theme.palette.grey[600]
+    },
+    {
+      text: 'Notifications',
+      icon: NotificationsIcon,
+      path: '/admin/notifications',
+      color: theme.palette.error.main
     }
   ];
 
@@ -335,13 +342,8 @@ const AdminLayout = () => {
               </IconButton>
             </Tooltip>
 
-            <Tooltip title="Notifications">
-              <IconButton color="inherit">
-                <Badge badgeContent={3} color="error">
-                  <Notifications />
-                </Badge>
-              </IconButton>
-            </Tooltip>
+            {/* Notifications Component */}
+            <NotificationsComponent />
 
             {/* User Menu */}
             <Tooltip title="Account settings">

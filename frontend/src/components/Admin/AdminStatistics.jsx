@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Grid,
   Card,
   CardContent,
   Typography,
@@ -25,6 +24,7 @@ import {
   ListItemIcon,
   Avatar
 } from '@mui/material';
+
 import {
   People as PeopleIcon,
   FitnessCenter as FitnessCenterIcon,

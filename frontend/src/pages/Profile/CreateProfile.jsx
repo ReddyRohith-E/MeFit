@@ -11,7 +11,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Grid,
   Stepper,
   Step,
   StepLabel,
@@ -21,6 +20,7 @@ import {
   Checkbox,
   Autocomplete,
 } from '@mui/material';
+
 import {
   ArrowBack as ArrowBackIcon,
   ArrowForward as ArrowForwardIcon,

@@ -18,10 +18,11 @@ import {
   DialogContent,
   DialogActions,
   CircularProgress,
-  Grid,
   IconButton,
-  Tooltip
-} from '@mui/material';
+  Tooltip,
+  Grid,
+  } from '@mui/material';
+
 import {
   Check as CheckIcon,
   Close as CloseIcon,

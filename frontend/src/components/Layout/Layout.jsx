@@ -154,7 +154,13 @@ const Layout = () => {
               anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
               transformOrigin={{ vertical: 'top', horizontal: 'right' }}
             >
-              <MenuItem onClick={() => { navigate('/profile'); handleProfileMenuClose(); }}>
+              <MenuItem onClick={() => { navigate('/app/profile'); handleProfileMenuClose(); }}>
+                <ListItemIcon>
+                  <Person fontSize="small" />
+                </ListItemIcon>
+                Profile
+              </MenuItem>
+              <MenuItem onClick={() => { navigate('/app/profile/settings'); handleProfileMenuClose(); }}>
                 <ListItemIcon>
                   <Settings fontSize="small" />
                 </ListItemIcon>

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Grid,
   Card,
   CardContent,
   Typography,
@@ -17,6 +16,7 @@ import {
   Divider,
   CircularProgress
 } from '@mui/material';
+
 import {
   TrendingUp as TrendingUpIcon,
   FitnessCenter as FitnessCenterIcon,
@@ -250,7 +250,7 @@ const EnhancedDashboard = () => {
                   const isCurrentDay = isToday(day);
                   
                   return (
-                    <Grid item xs key={index}>
+                    <Grid xs key={index}>
                       <Paper
                         sx={{
                           p: 1,

@@ -3,7 +3,6 @@ import {
   Box,
   Paper,
   Typography,
-  Grid,
   Card,
   CardContent,
   Avatar,
@@ -28,8 +27,10 @@ import {
   ListItemIcon,
   LinearProgress,
   Alert,
-  Snackbar
-} from '@mui/material';
+  Snackbar,
+  Grid,
+  } from '@mui/material';
+
 import {
   Edit as EditIcon,
   Person as PersonIcon,
@@ -208,7 +209,7 @@ const EnhancedProfile = () => {
               {getInitials(profile?.name || user?.username)}
             </Avatar>
           </Grid>
-          <Grid item xs>
+          <Grid xs>
             <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
               {profile?.name || user?.username}
             </Typography>
