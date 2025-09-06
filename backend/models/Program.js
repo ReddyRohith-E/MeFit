@@ -101,7 +101,7 @@ const programSchema = new mongoose.Schema({
     type: String,
     trim: true
   }],
-  createdBy: {
+  contributor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true

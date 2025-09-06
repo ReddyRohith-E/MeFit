@@ -11,8 +11,8 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const profileRoutes = require('./routes/profiles');
 const goalRoutes = require('./routes/goals');
-const workoutRoutes = require('./routes/workouts');
-const exerciseRoutes = require('./routes/exercises');
+const workoutRoutes = require('./routes/workouts'); // SRS-compliant workout routes
+const exerciseRoutes = require('./routes/exercises'); // SRS-compliant exercise routes
 const programRoutes = require('./routes/programs');
 const twoFactorRoutes = require('./routes/twoFactor');
 

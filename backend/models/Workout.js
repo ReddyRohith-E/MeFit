@@ -92,7 +92,7 @@ const workoutSchema = new mongoose.Schema({
     type: Number, // estimated calories burned
     min: 0
   },
-  createdBy: {
+  contributor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true

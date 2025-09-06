@@ -85,19 +85,11 @@ const exerciseSchema = new mongoose.Schema({
     type: String, // URL to image
     default: null
   },
-  imageUrl: {
-    type: String, // URL to image (alternative field name)
-    default: null
-  },
   videoLink: {
     type: String, // URL to video demonstration
     default: null
   },
-  videoUrl: {
-    type: String, // URL to video (alternative field name)
-    default: null
-  },
-  createdBy: {
+  contributor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
