@@ -9,7 +9,10 @@
     "test": "jest",
     "seed": "node scripts/seed.js",
     "cleanDB": "node scripts/cleanDB.js",
-    "cleanSeed": "npm run cleanDB && npm run seed"
+    "cleanSeed": "npm run cleanDB && npm run seed",
+    "backup": "node scripts/backup.js create",
+    "backup:list": "node scripts/backup.js list",
+    "backup:restore": "node scripts/backup.js restore"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
@@ -24,6 +27,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.18.0",
     "multer": "^2.0.2",
+    "node-cron": "^4.2.1",
     "qrcode": "^1.5.4",
     "speakeasy": "^2.0.0"
   },

@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const { sanitizeInput, preventNoSQLInjection, preventPrototypePollution } = require('./middleware/sanitization');
+const BackupScheduler = require('./scripts/backupScheduler');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
@@ -21,6 +22,16 @@ const adminRoutes = require('./routes/admin');
 const adminAuthRoutes = require('./routes/adminAuth');
 
 const app = express();
+
+// SRS SEC-04: HTTPS Enforcement for production
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    if (req.header('x-forwarded-proto') !== 'https') {
+      return res.redirect(`https://${req.header('host')}${req.url}`);
+    }
+    next();
+  });
+}
 
 // Security middleware
 app.use(helmet());
@@ -57,6 +68,14 @@ app.use(preventPrototypePollution);
 
 // Routes - Using SRS specified singular paths
 app.use('/api/auth', authLimiter, authRoutes);
+
+// SRS API-02: POST /login endpoint
+app.post('/login', authLimiter, (req, res, next) => {
+  // Redirect to the auth login endpoint
+  req.url = '/login';
+  authRoutes(req, res, next);
+});
+
 app.use('/user', userRoutes);
 app.use('/profile', profileRoutes);
 app.use('/goal', goalRoutes);
@@ -93,7 +112,15 @@ app.use((req, res) => {
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/mefit')
-.then(() => console.log('Connected to MongoDB'))
+.then(() => {
+  console.log('Connected to MongoDB');
+  
+  // SRS DB-02: Start automated backup scheduler
+  if (process.env.NODE_ENV === 'production') {
+    const backupScheduler = new BackupScheduler();
+    backupScheduler.start();
+  }
+})
 .catch(err => console.error('MongoDB connection error:', err));
 
 const PORT = process.env.PORT || 5000;

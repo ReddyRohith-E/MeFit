@@ -36,9 +36,25 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, [token]);
 
-  const login = async (email, password) => {
+  const login = async (email, password, twoFactorToken = null) => {
     try {
-      const response = await api.post('/auth/login', { email, password });
+      const loginData = { email, password };
+      if (twoFactorToken) {
+        loginData.twoFactorToken = twoFactorToken;
+      }
+
+      const response = await api.post('/auth/login', loginData);
+      
+      // SRS SEC-01: Handle 2FA requirement
+      if (response.data.requiresTwoFactor) {
+        return { 
+          success: false, 
+          requiresTwoFactor: true,
+          userId: response.data.userId,
+          message: response.data.message 
+        };
+      }
+
       const { token: newToken, user: userData } = response.data;
       
       localStorage.setItem('token', newToken);
@@ -49,6 +65,17 @@ export const AuthProvider = ({ children }) => {
       return { success: true };
     } catch (error) {
       console.error('Login failed:', error);
+      
+      // Check if it's a 2FA error
+      if (error.response?.data?.requiresTwoFactor) {
+        return {
+          success: false,
+          requiresTwoFactor: true,
+          userId: error.response.data.userId,
+          error: error.response.data.message
+        };
+      }
+      
       return { 
         success: false, 
         error: error.response?.data?.message || 'Login failed' 
@@ -119,6 +146,79 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // 2FA functions - SRS SEC-01: 2FA Support
+  const setup2FA = async () => {
+    try {
+      const response = await api.post('/2fa/setup');
+      return {
+        success: true,
+        data: response.data.data
+      };
+    } catch (error) {
+      console.error('2FA setup failed:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Failed to setup 2FA'
+      };
+    }
+  };
+
+  const verify2FA = async (token) => {
+    try {
+      const response = await api.post('/2fa/verify', { token });
+      // Update user to reflect 2FA is now enabled
+      if (user) {
+        setUser({ ...user, twoFactorEnabled: true });
+      }
+      return {
+        success: true,
+        message: response.data.message
+      };
+    } catch (error) {
+      console.error('2FA verification failed:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Failed to verify 2FA'
+      };
+    }
+  };
+
+  const disable2FA = async (token, password) => {
+    try {
+      const response = await api.post('/2fa/disable', { token, password });
+      // Update user to reflect 2FA is now disabled
+      if (user) {
+        setUser({ ...user, twoFactorEnabled: false });
+      }
+      return {
+        success: true,
+        message: response.data.message
+      };
+    } catch (error) {
+      console.error('2FA disable failed:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Failed to disable 2FA'
+      };
+    }
+  };
+
+  const get2FAStatus = async () => {
+    try {
+      const response = await api.get('/2fa/status');
+      return {
+        success: true,
+        data: response.data.data
+      };
+    } catch (error) {
+      console.error('Get 2FA status failed:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Failed to get 2FA status'
+      };
+    }
+  };
+
   // DEPRECATED: Token-based reset methods - no longer needed with direct password reset
   /*
   const resetPassword = async (token, password) => {
@@ -167,6 +267,10 @@ export const AuthProvider = ({ children }) => {
     isContributor,
     isAdmin,
     forgotPassword,
+    setup2FA,
+    verify2FA,
+    disable2FA,
+    get2FAStatus,
     // resetPassword, // Commented out - no longer needed
     // validateResetToken, // Commented out - no longer needed
   };

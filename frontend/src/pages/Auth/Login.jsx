@@ -28,6 +28,11 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  
+  // SRS SEC-01: 2FA Support
+  const [show2FA, setShow2FA] = useState(false);
+  const [twoFactorToken, setTwoFactorToken] = useState('');
+  const [pendingUserId, setPendingUserId] = useState(null);
 
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAuth();
@@ -54,12 +59,40 @@ const Login = () => {
     setLoading(true);
     setError('');
 
-    const result = await login(formData.email, formData.password);
+    const result = await login(formData.email, formData.password, show2FA ? twoFactorToken : null);
+
+    if (result.success) {
+      navigate('/app/dashboard');
+    } else if (result.requiresTwoFactor) {
+      // SRS SEC-01: Handle 2FA requirement
+      setShow2FA(true);
+      setPendingUserId(result.userId);
+      setError(''); // Clear any previous errors
+    } else {
+      setError(result.error);
+    }
+
+    setLoading(false);
+  };
+
+  const handle2FASubmit = async (e) => {
+    e.preventDefault();
+    if (!twoFactorToken) {
+      setError('Please enter your 2FA code');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    const result = await login(formData.email, formData.password, twoFactorToken);
 
     if (result.success) {
       navigate('/app/dashboard');
     } else {
       setError(result.error);
+      // Reset 2FA form on error
+      setTwoFactorToken('');
     }
 
     setLoading(false);
@@ -181,7 +214,113 @@ const Login = () => {
               </Alert>
             )}
 
-            <Box component="form" onSubmit={handleSubmit} className="login-form">
+            {/* SRS SEC-01: 2FA Form */}
+            {show2FA ? (
+              <Box component="form" onSubmit={handle2FASubmit} className="login-form">
+                <Typography variant="h6" gutterBottom sx={{ color: 'text.primary', textAlign: 'center' }}>
+                  Two-Factor Authentication
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center', mb: 2 }}>
+                  Enter the 6-digit code from your authenticator app
+                </Typography>
+                
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  id="twoFactorToken"
+                  label="2FA Code"
+                  name="twoFactorToken"
+                  type="text"
+                  inputProps={{ maxLength: 6 }}
+                  autoFocus
+                  value={twoFactorToken}
+                  onChange={(e) => setTwoFactorToken(e.target.value.replace(/\D/g, ''))}
+                  disabled={loading}
+                  className="login-input"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 3,
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      backgroundColor: theme.palette.mode === 'dark'
+                        ? 'rgba(255, 255, 255, 0.02)'
+                        : 'rgba(0, 0, 0, 0.02)',
+                      backdropFilter: 'blur(10px)',
+                      '& fieldset': {
+                        borderColor: theme.palette.mode === 'dark'
+                          ? 'rgba(255, 255, 255, 0.1)'
+                          : 'rgba(0, 0, 0, 0.1)',
+                        borderWidth: '1px'
+                      },
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        backgroundColor: theme.palette.mode === 'dark'
+                          ? 'rgba(59, 130, 246, 0.05)'
+                          : 'rgba(37, 99, 235, 0.02)',
+                        boxShadow: theme.palette.mode === 'dark'
+                          ? `0 8px 32px rgba(59, 130, 246, 0.15)`
+                          : `0 4px 12px ${theme.palette.primary.main}20`,
+                        '& fieldset': {
+                          borderColor: theme.palette.mode === 'dark'
+                            ? 'rgba(59, 130, 246, 0.3)'
+                            : theme.palette.primary.main
+                        }
+                      },
+                      '&.Mui-focused': {
+                        transform: 'translateY(-2px)',
+                        backgroundColor: theme.palette.mode === 'dark'
+                          ? 'rgba(59, 130, 246, 0.08)'
+                          : 'rgba(37, 99, 235, 0.05)',
+                        boxShadow: theme.palette.mode === 'dark'
+                          ? `0 8px 32px rgba(59, 130, 246, 0.25)`
+                          : `0 4px 12px ${theme.palette.primary.main}30`,
+                        '& fieldset': {
+                          borderColor: theme.palette.primary.main,
+                          borderWidth: '2px'
+                        }
+                      }
+                    }
+                  }}
+                />
+                
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  disabled={loading || !twoFactorToken || twoFactorToken.length !== 6}
+                  sx={{
+                    mt: 3,
+                    mb: 2,
+                    height: 52,
+                    borderRadius: 3,
+                    fontWeight: 600,
+                    fontSize: '1.1rem',
+                    textTransform: 'none',
+                    background: theme.palette.mode === 'dark'
+                      ? 'linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%)'
+                      : 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #3b82f6 100%)',
+                  }}
+                >
+                  {loading ? <CircularProgress size={24} color="inherit" /> : 'Verify'}
+                </Button>
+
+                <Button
+                  fullWidth
+                  variant="text"
+                  onClick={() => {
+                    setShow2FA(false);
+                    setTwoFactorToken('');
+                    setPendingUserId(null);
+                    setError('');
+                  }}
+                  disabled={loading}
+                  sx={{ mt: 1 }}
+                >
+                  Back to Login
+                </Button>
+              </Box>
+            ) : (
+              <Box component="form" onSubmit={handleSubmit} className="login-form">
               <TextField
                 margin="normal"
                 required
@@ -521,6 +660,7 @@ const Login = () => {
                 </Link>
               </Box>
             </Box>
+            )}
           </Paper>
         </Box>
       </Container>

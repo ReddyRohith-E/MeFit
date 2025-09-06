@@ -97,7 +97,9 @@ router.post('/', async (req, res) => {
 // GET /user/all (admin only) - for admin panel
 router.get('/all', auth, admin, async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = '', role = 'all' } = req.query;
+    // SRS API-01: Accept only search parameter via query, others via headers
+    const { search = '' } = req.query;
+    const { page = 1, limit = 10, role = 'all' } = req.headers;
     const skip = (page - 1) * limit;
 
     // Build search query

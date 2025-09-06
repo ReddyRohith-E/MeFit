@@ -137,15 +137,16 @@ router.get('/dashboard/stats', async (req, res) => {
 // Get all users with pagination and filtering
 router.get('/users', async (req, res) => {
   try {
+    // SRS API-01: Accept only search parameter via query, others via headers  
+    const { search = '' } = req.query;
     const {
       page = 1,
       limit = 10,
-      search = '',
       role = 'all',
       status = 'all',
       sortBy = 'createdAt',
       sortOrder = 'desc'
-    } = req.query;
+    } = req.headers;
 
     // Build filter object
     const filter = {};
@@ -489,7 +490,8 @@ router.patch('/contributor-requests/:userId/:action', async (req, res) => {
 // Get system analytics
 router.get('/analytics', async (req, res) => {
   try {
-    const { period = '30' } = req.query; // days
+    // SRS API-01: Accept period via headers instead of query
+    const { period = '30' } = req.headers; // days
     const daysAgo = parseInt(period);
     const startDate = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
 
@@ -624,7 +626,8 @@ router.get('/content/stats', async (req, res) => {
 // Get all notifications
 router.get('/notifications', async (req, res) => {
   try {
-    const { page = 1, limit = 20, type, isRead } = req.query;
+    // SRS API-01: Accept all parameters via headers instead of query
+    const { page = 1, limit = 20, type, isRead } = req.headers;
     const skip = (page - 1) * limit;
 
     // Build filter

@@ -40,18 +40,19 @@ const programValidation = [
     .withMessage('Program must have at least one workout')
 ];
 
-// GET /api/programs
+// GET /program - SRS API-01 compliant (only search query parameter allowed)
 router.get('/', auth, async (req, res) => {
   try {
-    const {
-      page = 1,
-      limit = 20,
-      search = '',
-      category = '',
-      difficulty = '',
-      duration = '',
-      sortBy = 'name'
-    } = req.query;
+    // SRS API-01: Only search query parameter allowed
+    const { search } = req.query;
+    
+    // Get filtering parameters from headers or use defaults
+    const page = parseInt(req.headers['x-page']) || 1;
+    const limit = parseInt(req.headers['x-limit']) || 20;
+    const category = req.headers['x-category'] || '';
+    const difficulty = req.headers['x-difficulty'] || '';
+    const duration = req.headers['x-duration'] || '';
+    const sortBy = req.headers['x-sort-by'] || 'name';
 
     const skip = (page - 1) * limit;
 
@@ -310,25 +311,166 @@ router.get('/my/created', auth, contributor, async (req, res) => {
   }
 });
 
-// GET /api/programs/suggestions/:userId
+// GET /program/suggestions/:userId - SRS FE-04: Program suggestions based on fitness evaluation
 router.get('/suggestions/:userId', auth, async (req, res) => {
   try {
-    // This would implement program suggestions based on user profile
-    // For now, return popular beginner programs
-    const suggestions = await Program.find({
-      difficulty: 'beginner',
-      isActive: true
-    })
-      .populate('workouts.workout', 'name type')
+    const Profile = require('../models/Profile');
+    const userId = req.params.userId;
+    
+    // Get user profile for intelligent suggestions
+    const profile = await Profile.findOne({ user: userId });
+    
+    let query = { isActive: true };
+    let sortCriteria = { 'rating.average': -1, createdAt: -1 };
+    
+    if (profile) {
+      // Smart suggestions based on user profile
+      const fitnessLevel = profile.fitnessLevel || 'beginner';
+      const fitnessGoals = profile.fitnessGoals || [];
+      const preferences = profile.preferences || {};
+      
+      // Filter by appropriate difficulty
+      query.difficulty = fitnessLevel;
+      
+      // If user has specific goals, prioritize matching categories
+      if (fitnessGoals.length > 0) {
+        const categoryMapping = {
+          'weight_loss': ['weight_loss', 'cardio', 'general_fitness'],
+          'muscle_gain': ['muscle_building', 'strength_training'],
+          'endurance': ['endurance', 'cardio'],
+          'strength': ['strength_training', 'muscle_building'],
+          'flexibility': ['flexibility', 'yoga'],
+          'general_fitness': ['general_fitness', 'weight_loss']
+        };
+        
+        const matchingCategories = fitnessGoals.flatMap(goal => 
+          categoryMapping[goal] || [goal]
+        );
+        
+        if (matchingCategories.length > 0) {
+          query.category = { $in: matchingCategories };
+        }
+      }
+      
+      // Consider workout duration preferences
+      if (preferences.workoutDuration) {
+        const maxDuration = preferences.workoutDuration;
+        query.estimatedTimePerSession = { $lte: maxDuration + 15 }; // Allow 15min buffer
+      }
+      
+      // Consider workout frequency preferences
+      if (preferences.workoutFrequency) {
+        query.workoutsPerWeek = { $lte: preferences.workoutFrequency };
+      }
+      
+      // Consider medical conditions
+      if (profile.medicalConditions && profile.medicalConditions.length > 0) {
+        // Prioritize low-impact programs
+        query.category = { $in: ['flexibility', 'rehabilitation', 'general_fitness'] };
+        sortCriteria = { difficulty: 1, 'rating.average': -1 };
+      }
+    } else {
+      // Fallback for users without profiles
+      query.difficulty = 'beginner';
+    }
+    
+    const suggestions = await Program.find(query)
+      .populate('workouts.workout', 'name type estimatedDuration')
+      .populate('createdBy', 'firstName lastName')
       .limit(5)
-      .sort({ 'rating.average': -1, createdAt: -1 });
+      .sort(sortCriteria);
+    
+    // Add personalized reasons for each suggestion
+    const enhancedSuggestions = suggestions.map(program => ({
+      ...program.toJSON(),
+      recommendationReason: generateRecommendationReason(program, profile),
+      matchScore: calculateMatchScore(program, profile)
+    }));
+    
+    // Sort by match score if profile exists
+    if (profile) {
+      enhancedSuggestions.sort((a, b) => b.matchScore - a.matchScore);
+    }
 
-    res.json({ suggestions });
+    res.json({ 
+      suggestions: enhancedSuggestions,
+      basedOnProfile: !!profile,
+      userFitnessLevel: profile?.fitnessLevel || 'unknown'
+    });
   } catch (error) {
     console.error('Get program suggestions error:', error);
     res.status(500).json({ message: 'Failed to get program suggestions' });
   }
 });
+
+// Helper function to generate recommendation reasons
+const generateRecommendationReason = (program, profile) => {
+  if (!profile) {
+    return 'Great starting program for beginners';
+  }
+  
+  const reasons = [];
+  
+  if (program.difficulty === profile.fitnessLevel) {
+    reasons.push(`Matches your ${profile.fitnessLevel} fitness level`);
+  }
+  
+  if (profile.fitnessGoals && profile.fitnessGoals.some(goal => 
+    program.category.includes(goal) || goal.includes(program.category)
+  )) {
+    reasons.push('Aligns with your fitness goals');
+  }
+  
+  if (profile.preferences?.workoutDuration && 
+      program.estimatedTimePerSession <= profile.preferences.workoutDuration + 15) {
+    reasons.push('Fits your preferred workout duration');
+  }
+  
+  if (program.rating?.average >= 4) {
+    reasons.push('Highly rated by other users');
+  }
+  
+  return reasons.length > 0 ? reasons.join(', ') : 'Recommended for you';
+};
+
+// Helper function to calculate match score
+const calculateMatchScore = (program, profile) => {
+  if (!profile) return 50; // Default score
+  
+  let score = 0;
+  
+  // Fitness level match (30 points)
+  if (program.difficulty === profile.fitnessLevel) score += 30;
+  else if (Math.abs(['beginner', 'intermediate', 'advanced'].indexOf(program.difficulty) - 
+                    ['beginner', 'intermediate', 'advanced'].indexOf(profile.fitnessLevel)) === 1) score += 15;
+  
+  // Goals alignment (25 points)
+  if (profile.fitnessGoals) {
+    const goalMatch = profile.fitnessGoals.some(goal => 
+      program.category.includes(goal) || goal.includes(program.category)
+    );
+    if (goalMatch) score += 25;
+  }
+  
+  // Duration preference (20 points)
+  if (profile.preferences?.workoutDuration) {
+    const durationDiff = Math.abs(program.estimatedTimePerSession - profile.preferences.workoutDuration);
+    if (durationDiff <= 15) score += 20;
+    else if (durationDiff <= 30) score += 10;
+  }
+  
+  // Frequency preference (15 points)
+  if (profile.preferences?.workoutFrequency && 
+      program.workoutsPerWeek <= profile.preferences.workoutFrequency) {
+    score += 15;
+  }
+  
+  // Rating bonus (10 points)
+  if (program.rating?.average >= 4) score += 10;
+  else if (program.rating?.average >= 3) score += 5;
+  
+  return score;
+};
 
 // POST /api/programs/:programId/rate
 router.post('/:programId/rate', auth, async (req, res) => {

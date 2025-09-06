@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const speakeasy = require('speakeasy');
 const User = require('../models/User');
 
 const auth = async (req, res, next) => {
@@ -38,6 +39,46 @@ const auth = async (req, res, next) => {
   }
 };
 
+// SRS SEC-01: Enhanced 2FA verification middleware for sensitive operations
+const require2FA = async (req, res, next) => {
+  try {
+    if (!req.user.twoFactorEnabled) {
+      return res.status(401).json({ 
+        message: '2FA is required for this operation.',
+        requires2FA: true 
+      });
+    }
+
+    const twoFactorToken = req.headers['x-2fa-token'];
+    if (!twoFactorToken) {
+      return res.status(401).json({ 
+        message: '2FA verification required. Provide token in x-2fa-token header.',
+        requires2FA: true 
+      });
+    }
+
+    // Verify 2FA token
+    const verified = speakeasy.totp.verify({
+      secret: req.user.twoFactorSecret,
+      encoding: 'base32',
+      token: twoFactorToken,
+      window: 2
+    });
+
+    if (!verified) {
+      return res.status(401).json({ 
+        message: 'Invalid 2FA token.',
+        requires2FA: true 
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error('2FA verification error:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+};
+
 const admin = (req, res, next) => {
   if (!req.user.isAdmin) {
     return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
@@ -63,6 +104,7 @@ const selfOrAdmin = (req, res, next) => {
 
 module.exports = {
   auth,
+  require2FA,
   admin,
   contributor,
   selfOrAdmin
