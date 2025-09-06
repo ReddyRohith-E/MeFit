@@ -246,7 +246,7 @@ const Register = () => {
 
             <Box component="form" onSubmit={handleSubmit} className="register-form">
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     margin="normal"
                     required
@@ -320,7 +320,7 @@ const Register = () => {
                     }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     margin="normal"
                     required
