@@ -137,7 +137,35 @@ const calculateFitnessEvaluation = (profile) => {
   };
 };
 
-// POST /api/profiles
+// GET /profile/:profile_id - SRS API-04: Returns detail about current state of the users profile
+router.get('/:profile_id', auth, async (req, res) => {
+  try {
+    const profile = await Profile.findById(req.params.profile_id)
+      .populate('user', 'firstName lastName email profilePicture');
+
+    if (!profile) {
+      return res.status(404).json({ message: 'Profile not found' });
+    }
+
+    // Check if user can access this profile
+    if (profile.user._id.toString() !== req.user._id.toString() && !req.user.isAdmin) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    // Calculate fitness evaluation
+    const evaluation = calculateFitnessEvaluation(profile);
+
+    res.json({
+      profile,
+      evaluation
+    });
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(500).json({ message: 'Failed to retrieve profile' });
+  }
+});
+
+// POST /profile - SRS API-04: Creates a new profile
 router.post('/', auth, profileValidation, validate, async (req, res) => {
   try {
     // Check if profile already exists
@@ -171,61 +199,10 @@ router.post('/', auth, profileValidation, validate, async (req, res) => {
   }
 });
 
-// GET /api/profiles/:profileId
-router.get('/:profileId', auth, async (req, res) => {
+// PATCH /profile/:profile_id - SRS API-04: Executes a partial update of the corresponding profile_id
+router.patch('/:profile_id', auth, profileValidation, validate, async (req, res) => {
   try {
-    const profile = await Profile.findById(req.params.profileId)
-      .populate('user', 'firstName lastName email profilePicture');
-
-    if (!profile) {
-      return res.status(404).json({ message: 'Profile not found' });
-    }
-
-    // Check if user can access this profile
-    if (profile.user._id.toString() !== req.user._id.toString() && !req.user.isAdmin) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
-
-    // Calculate fitness evaluation
-    const evaluation = calculateFitnessEvaluation(profile);
-
-    res.json({
-      profile,
-      evaluation
-    });
-  } catch (error) {
-    console.error('Get profile error:', error);
-    res.status(500).json({ message: 'Failed to retrieve profile' });
-  }
-});
-
-// GET /api/profiles/user/:userId
-router.get('/user/:userId', auth, selfOrAdmin, async (req, res) => {
-  try {
-    const profile = await Profile.findOne({ user: req.params.userId })
-      .populate('user', 'firstName lastName email profilePicture');
-
-    if (!profile) {
-      return res.status(404).json({ message: 'Profile not found' });
-    }
-
-    // Calculate fitness evaluation
-    const evaluation = calculateFitnessEvaluation(profile);
-
-    res.json({
-      profile,
-      evaluation
-    });
-  } catch (error) {
-    console.error('Get profile by user error:', error);
-    res.status(500).json({ message: 'Failed to retrieve profile' });
-  }
-});
-
-// PATCH /api/profiles/:profileId
-router.patch('/:profileId', auth, profileValidation, validate, async (req, res) => {
-  try {
-    const profile = await Profile.findById(req.params.profileId);
+    const profile = await Profile.findById(req.params.profile_id);
 
     if (!profile) {
       return res.status(404).json({ message: 'Profile not found' });
@@ -260,30 +237,54 @@ router.patch('/:profileId', auth, profileValidation, validate, async (req, res) 
   }
 });
 
-// DELETE /api/profiles/:profileId
-router.delete('/:profileId', auth, async (req, res) => {
+// DELETE /profile/:profile_id - SRS API-04: Deletes a profile. User only.
+router.delete('/:profile_id', auth, async (req, res) => {
   try {
-    const profile = await Profile.findById(req.params.profileId);
+    const profile = await Profile.findById(req.params.profile_id);
 
     if (!profile) {
       return res.status(404).json({ message: 'Profile not found' });
     }
 
-    // Check if user can delete this profile
-    if (profile.user.toString() !== req.user._id.toString() && !req.user.isAdmin) {
+    // Check if user can delete this profile (user only, not admin per SRS)
+    if (profile.user.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    await Profile.findByIdAndDelete(req.params.profileId);
+    await Profile.findByIdAndDelete(req.params.profile_id);
 
-    res.json({ message: 'Profile deleted successfully' });
+    res.status(204).end(); // 204 No Content per SRS
   } catch (error) {
     console.error('Delete profile error:', error);
     res.status(500).json({ message: 'Failed to delete profile' });
   }
 });
 
-// GET /api/profiles/me/evaluation
+// Legacy routes for admin functionality
+// GET /profile/user/:userId
+router.get('/user/:userId', auth, selfOrAdmin, async (req, res) => {
+  try {
+    const profile = await Profile.findOne({ user: req.params.userId })
+      .populate('user', 'firstName lastName email profilePicture');
+
+    if (!profile) {
+      return res.status(404).json({ message: 'Profile not found' });
+    }
+
+    // Calculate fitness evaluation
+    const evaluation = calculateFitnessEvaluation(profile);
+
+    res.json({
+      profile,
+      evaluation
+    });
+  } catch (error) {
+    console.error('Get profile by user error:', error);
+    res.status(500).json({ message: 'Failed to retrieve profile' });
+  }
+});
+
+// GET /profile/me/evaluation
 router.get('/me/evaluation', auth, async (req, res) => {
   try {
     const profile = await Profile.findOne({ user: req.user._id });

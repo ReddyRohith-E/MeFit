@@ -95,9 +95,22 @@ const checkAdvancedGoalRealism = async (userId, goalData) => {
     if (profile.medicalConditions && profile.medicalConditions.length > 0) {
       warnings.push('Please consult with a healthcare provider before starting this goal');
       suggestions.push('Consider low-impact exercises and yoga programs');
+      
+      // Specific condition recommendations
+      profile.medicalConditions.forEach(condition => {
+        if (condition.condition.toLowerCase().includes('back')) {
+          suggestions.push('Focus on core strengthening and avoid heavy lifting');
+        }
+        if (condition.condition.toLowerCase().includes('knee')) {
+          suggestions.push('Choose low-impact activities like swimming or cycling');
+        }
+      });
     }
 
     // Activity level assessment
+    const activityMultiplier = getActivityMultiplier(profile.activityLevel);
+    const adjustedMaxWorkouts = Math.floor(maxRecommendedWorkouts * activityMultiplier);
+    
     if (profile.activityLevel === 'sedentary' && workoutsPerWeek > 3) {
       warnings.push('Consider starting with fewer workouts per week given your current activity level');
       suggestions.push('Gradually increase workout frequency as your fitness improves');
@@ -108,6 +121,25 @@ const checkAdvancedGoalRealism = async (userId, goalData) => {
     if (age > 50 && workoutsPerWeek > 4) {
       warnings.push('Consider additional recovery time between workouts');
       suggestions.push('Include flexibility and mobility work in your routine');
+    }
+
+    // Duration and intensity checks
+    if (workouts && workouts.length > 0) {
+      const avgEstimatedDuration = await calculateAverageWorkoutDuration(workouts);
+      const totalWeeklyTime = avgEstimatedDuration * workoutsPerWeek;
+      
+      if (totalWeeklyTime > profile.preferences?.workoutDuration * 7) {
+        warnings.push('This goal requires more time than your preferred workout duration');
+        suggestions.push('Consider shorter, more intense workouts or adjust your time commitment');
+      }
+    }
+
+    // Goal alignment with user preferences
+    if (profile.fitnessGoals && goalData.type) {
+      const goalAlignment = checkGoalAlignment(profile.fitnessGoals, goalData);
+      if (!goalAlignment.aligned) {
+        suggestions.push(goalAlignment.suggestion);
+      }
     }
 
     return {
@@ -151,6 +183,17 @@ const calculateFitnessScore = (profile) => {
   return Math.max(0, score);
 };
 
+const getActivityMultiplier = (activityLevel) => {
+  switch (activityLevel) {
+    case 'sedentary': return 0.5;
+    case 'lightly_active': return 0.7;
+    case 'moderately_active': return 1.0;
+    case 'very_active': return 1.2;
+    case 'extremely_active': return 1.5;
+    default: return 1.0;
+  }
+};
+
 const calculateAge = (dateOfBirth) => {
   const today = new Date();
   const birthDate = new Date(dateOfBirth);
@@ -164,10 +207,95 @@ const calculateAge = (dateOfBirth) => {
   return age;
 };
 
-// GET /goal/:goal_id - SRS API-05: Returns detail about current state of the users current goal
-router.get('/:goal_id', auth, async (req, res) => {
+const calculateAverageWorkoutDuration = async (workouts) => {
+  const workoutIds = workouts.map(w => w.workout);
+  const workoutDetails = await Workout.find({ _id: { $in: workoutIds } });
+  
+  const totalDuration = workoutDetails.reduce((sum, workout) => sum + (workout.estimatedDuration || 45), 0);
+  return workoutDetails.length > 0 ? totalDuration / workoutDetails.length : 45;
+};
+
+const checkGoalAlignment = (userGoals, goalData) => {
+  // Simple goal alignment check - can be enhanced
+  const alignmentMap = {
+    'weight_loss': ['cardio', 'hiit'],
+    'muscle_gain': ['strength', 'powerlifting'],
+    'endurance': ['cardio', 'running'],
+    'flexibility': ['yoga', 'pilates'],
+    'general_fitness': ['strength', 'cardio', 'yoga']
+  };
+  
+  // This is a simplified version - in practice, you'd analyze the actual workouts
+  return {
+    aligned: true,
+    suggestion: 'Consider programs that align with your fitness goals'
+  };
+};
+
+// GET /api/goals - Get user's goals
+router.get('/', auth, async (req, res) => {
   try {
-    const goal = await Goal.findById(req.params.goal_id)
+    const { status = 'all', page = 1, limit = 10 } = req.query;
+    const skip = (page - 1) * limit;
+
+    let query = { user: req.user._id };
+    
+    if (status !== 'all') {
+      query.status = status;
+    }
+
+    const goals = await Goal.find(query)
+      .populate('program', 'name category')
+      .populate('workouts.workout', 'name type estimatedDuration')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await Goal.countDocuments(query);
+
+    res.json({
+      goals,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Get goals error:', error);
+    res.status(500).json({ message: 'Failed to retrieve goals' });
+  }
+});
+
+// GET /api/goals/current - Get current active goal
+router.get('/current', auth, async (req, res) => {
+  try {
+    const now = new Date();
+    const goal = await Goal.findOne({
+      user: req.user._id,
+      status: 'active',
+      startDate: { $lte: now },
+      endDate: { $gte: now }
+    })
+      .populate('program', 'name category')
+      .populate('workouts.workout', 'name type estimatedDuration difficulty');
+
+    if (!goal) {
+      return res.status(404).json({ message: 'No active goal found' });
+    }
+
+    res.json({ goal });
+  } catch (error) {
+    console.error('Get current goal error:', error);
+    res.status(500).json({ message: 'Failed to retrieve current goal' });
+  }
+});
+
+// GET /api/goals/:goalId
+router.get('/:goalId', auth, async (req, res) => {
+  try {
+    const goal = await Goal.findById(req.params.goalId)
       .populate('program', 'name category description')
       .populate('workouts.workout', 'name type estimatedDuration difficulty');
 
@@ -180,29 +308,14 @@ router.get('/:goal_id', auth, async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    // Must be able to see the current progress. I.E. Completed workouts assigned to a goal.
-    const completedWorkouts = goal.workouts.filter(w => w.completed);
-    const progress = {
-      ...goal.progress,
-      completedWorkouts: completedWorkouts.length,
-      totalWorkouts: goal.workouts.length,
-      completionPercentage: goal.workouts.length > 0 ? 
-        Math.round((completedWorkouts.length / goal.workouts.length) * 100) : 0
-    };
-
-    res.json({ 
-      goal: {
-        ...goal.toJSON(),
-        progress
-      }
-    });
+    res.json({ goal });
   } catch (error) {
     console.error('Get goal error:', error);
     res.status(500).json({ message: 'Failed to retrieve goal' });
   }
 });
 
-// POST /goal - SRS API-05: Creates a new goal
+// POST /api/goals
 router.post('/', auth, goalValidation, validate, async (req, res) => {
   try {
     const { program: programId, workouts: workoutData, ...goalData } = req.body;
@@ -294,10 +407,10 @@ router.post('/', auth, goalValidation, validate, async (req, res) => {
   }
 });
 
-// PATCH /goal/:goal_id - SRS API-05: Executes a partial update of the corresponding goal_id
-router.patch('/:goal_id', auth, async (req, res) => {
+// PATCH /api/goals/:goalId
+router.patch('/:goalId', auth, async (req, res) => {
   try {
-    const goal = await Goal.findById(req.params.goal_id);
+    const goal = await Goal.findById(req.params.goalId);
 
     if (!goal) {
       return res.status(404).json({ message: 'Goal not found' });
@@ -332,10 +445,12 @@ router.patch('/:goal_id', auth, async (req, res) => {
   }
 });
 
-// DELETE /goal/:goal_id - SRS API-05: This should delete a goal of the corresponding goal_id
-router.delete('/:goal_id', auth, async (req, res) => {
+// POST /api/goals/:goalId/complete-workout
+router.post('/:goalId/complete-workout', auth, async (req, res) => {
   try {
-    const goal = await Goal.findById(req.params.goal_id);
+    const { workoutId, actualDuration, caloriesBurned, notes, difficulty, enjoyment } = req.body;
+
+    const goal = await Goal.findById(req.params.goalId);
 
     if (!goal) {
       return res.status(404).json({ message: 'Goal not found' });
@@ -346,12 +461,163 @@ router.delete('/:goal_id', auth, async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    await Goal.findByIdAndDelete(req.params.goal_id);
+    // Find the workout in the goal
+    const workoutIndex = goal.workouts.findIndex(w => w._id.toString() === workoutId);
+    if (workoutIndex === -1) {
+      return res.status(404).json({ message: 'Workout not found in goal' });
+    }
 
-    res.status(204).end(); // 204 No Content per SRS
+    const workout = goal.workouts[workoutIndex];
+    if (workout.completed) {
+      return res.status(400).json({ message: 'Workout already completed' });
+    }
+
+    // Mark workout as completed
+    workout.completed = true;
+    workout.completedAt = new Date();
+    if (actualDuration) workout.actualDuration = actualDuration;
+    if (caloriesBurned) workout.caloriesBurned = caloriesBurned;
+    if (notes) workout.notes = notes;
+    if (difficulty) workout.difficulty = difficulty;
+    if (enjoyment) workout.enjoyment = enjoyment;
+
+    // Update progress
+    goal.progress.completedWorkouts = goal.workouts.filter(w => w.completed).length;
+    goal.progress.totalCaloriesBurned = goal.workouts.reduce((total, w) => total + (w.caloriesBurned || 0), 0);
+    goal.progress.totalDuration = goal.workouts.reduce((total, w) => total + (w.actualDuration || 0), 0);
+    goal.progress.completionPercentage = Math.round((goal.progress.completedWorkouts / goal.workouts.length) * 100);
+
+    // Check for achievements
+    const completedCount = goal.progress.completedWorkouts;
+    if (completedCount === 1) {
+      goal.achievements.push({
+        type: 'milestone',
+        description: 'First workout completed!',
+        value: { count: 1 }
+      });
+    } else if (completedCount === 5) {
+      goal.achievements.push({
+        type: 'milestone',
+        description: '5 workouts completed!',
+        value: { count: 5 }
+      });
+    } else if (completedCount === 10) {
+      goal.achievements.push({
+        type: 'milestone',
+        description: '10 workouts completed!',
+        value: { count: 10 }
+      });
+    }
+
+    // Check for goal completion
+    if (goal.progress.completionPercentage === 100) {
+      goal.status = 'completed';
+      goal.achievements.push({
+        type: 'milestone',
+        description: 'Goal completed!',
+        value: { goalId: goal._id }
+      });
+    }
+
+    await goal.save();
+
+    res.json({
+      message: 'Workout marked as completed',
+      goal: {
+        _id: goal._id,
+        progress: goal.progress,
+        achievements: goal.achievements,
+        status: goal.status
+      }
+    });
+  } catch (error) {
+    console.error('Complete workout error:', error);
+    res.status(500).json({ message: 'Failed to complete workout' });
+  }
+});
+
+// DELETE /api/goals/:goalId
+router.delete('/:goalId', auth, async (req, res) => {
+  try {
+    const goal = await Goal.findById(req.params.goalId);
+
+    if (!goal) {
+      return res.status(404).json({ message: 'Goal not found' });
+    }
+
+    // Check if user owns this goal
+    if (goal.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    await Goal.findByIdAndDelete(req.params.goalId);
+
+    res.json({ message: 'Goal deleted successfully' });
   } catch (error) {
     console.error('Delete goal error:', error);
     res.status(500).json({ message: 'Failed to delete goal' });
+  }
+});
+
+// GET /api/goals/dashboard/stats
+router.get('/dashboard/stats', auth, async (req, res) => {
+  try {
+    const now = new Date();
+    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(endOfWeek.getDate() + 6);
+
+    // Current active goal
+    const currentGoal = await Goal.findOne({
+      user: req.user._id,
+      status: 'active',
+      startDate: { $lte: now },
+      endDate: { $gte: now }
+    }).populate('workouts.workout', 'name');
+
+    // Week progress
+    let weekProgress = { completed: 0, total: 0, percentage: 0 };
+    if (currentGoal) {
+      const weekWorkouts = currentGoal.workouts.filter(w => {
+        const workoutDate = new Date(w.scheduledDate);
+        return workoutDate >= startOfWeek && workoutDate <= endOfWeek;
+      });
+      const completedThisWeek = weekWorkouts.filter(w => w.completed).length;
+      weekProgress = {
+        completed: completedThisWeek,
+        total: weekWorkouts.length,
+        percentage: weekWorkouts.length > 0 ? Math.round((completedThisWeek / weekWorkouts.length) * 100) : 0
+      };
+    }
+
+    // Total stats
+    const totalGoals = await Goal.countDocuments({ user: req.user._id });
+    const completedGoals = await Goal.countDocuments({ user: req.user._id, status: 'completed' });
+    
+    // Total workouts completed
+    const goals = await Goal.find({ user: req.user._id });
+    const totalWorkoutsCompleted = goals.reduce((total, goal) => {
+      return total + goal.workouts.filter(w => w.completed).length;
+    }, 0);
+
+    res.json({
+      currentGoal: currentGoal ? {
+        _id: currentGoal._id,
+        title: currentGoal.title,
+        progress: currentGoal.progress,
+        daysRemaining: currentGoal.daysRemaining,
+        weekProgress
+      } : null,
+      stats: {
+        totalGoals,
+        completedGoals,
+        totalWorkoutsCompleted,
+        weekProgress
+      }
+    });
+  } catch (error) {
+    console.error('Get dashboard stats error:', error);
+    res.status(500).json({ message: 'Failed to retrieve dashboard stats' });
   }
 });
 

@@ -19,6 +19,9 @@ import {
   FormControlLabel,
   Checkbox,
   Autocomplete,
+  Alert,
+  Paper,
+  Grid
 } from '@mui/material';
 
 import {
@@ -28,13 +31,16 @@ import {
   Person as PersonIcon,
   FitnessCenter as FitnessIcon,
   Assessment as AssessmentIcon,
+  Psychology as PsychologyIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import LoadingSpinner from '../../components/Common/LoadingSpinner.jsx';
+import FitnessEvaluationSystem from '../../components/Profile/FitnessEvaluationSystem.jsx';
 import { profilesAPI } from '../../utils/api.js';
 import './CreateProfile.css';
 
-const steps = ['Personal Info', 'Physical Stats', 'Fitness Goals'];
+// Updated steps to include mandatory fitness evaluation - SRS FE-11
+const steps = ['Personal Info', 'Physical Stats', 'Fitness Goals', 'Fitness Evaluation'];
 
 const fitnessLevels = ['Beginner', 'Intermediate', 'Advanced', 'Expert'];
 
@@ -83,6 +89,10 @@ const CreateProfile = () => {
     fitnessGoals: [],
     medicalConditions: [],
     additionalNotes: '',
+    
+    // Fitness Evaluation - SRS FE-11 requirement
+    fitnessEvaluation: null,
+    evaluationCompleted: false
   });
 
   useEffect(() => {
@@ -142,6 +152,12 @@ const CreateProfile = () => {
         }
         break;
       
+      case 3: // Fitness Evaluation - SRS FE-11 requirement
+        if (!formData.evaluationCompleted) {
+          newErrors.evaluation = 'Fitness evaluation must be completed to proceed';
+        }
+        break;
+      
       default:
         break;
     }
@@ -152,7 +168,12 @@ const CreateProfile = () => {
 
   const handleNext = () => {
     if (validateStep(activeStep)) {
-      setActiveStep((prevActiveStep) => prevActiveStep + 1);
+      // If this is the fitness evaluation step and evaluation is completed, proceed to save
+      if (activeStep === 3 && formData.evaluationCompleted) {
+        handleSubmit();
+      } else {
+        setActiveStep((prevActiveStep) => prevActiveStep + 1);
+      }
     }
   };
 
@@ -396,6 +417,32 @@ const CreateProfile = () => {
           </Grid>
         );
 
+      case 3:
+        return (
+          <Box>
+            <Alert severity="info" sx={{ mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                SRS Requirement FE-11: Mandatory Fitness Evaluation
+              </Typography>
+              <Typography variant="body2">
+                This fitness evaluation is required to use the system. It will determine your workout limits and provide personalized recommendations.
+              </Typography>
+            </Alert>
+            
+            <FitnessEvaluationSystem 
+              userProfile={formData}
+              onEvaluationComplete={(evaluation) => {
+                setFormData(prev => ({
+                  ...prev,
+                  fitnessEvaluation: evaluation,
+                  evaluationCompleted: true,
+                  fitnessLevel: evaluation.level
+                }));
+              }}
+            />
+          </Box>
+        );
+
       default:
         return 'Unknown step';
     }
@@ -409,6 +456,8 @@ const CreateProfile = () => {
         return <FitnessIcon />;
       case 2:
         return <AssessmentIcon />;
+      case 3:
+        return <PsychologyIcon />;
       default:
         return null;
     }
@@ -466,12 +515,12 @@ const CreateProfile = () => {
             {activeStep === steps.length - 1 ? (
               <Button
                 variant="contained"
-                onClick={handleSubmit}
-                disabled={loading}
+                onClick={handleNext}
+                disabled={loading || !formData.evaluationCompleted}
                 startIcon={<SaveIcon />}
                 className="submit-btn"
               >
-                {loading ? 'Saving...' : 'Save Profile'}
+                {loading ? 'Saving...' : 'Complete Profile & Fitness Evaluation'}
               </Button>
             ) : (
               <Button
@@ -479,8 +528,9 @@ const CreateProfile = () => {
                 onClick={handleNext}
                 endIcon={<ArrowForwardIcon />}
                 className="next-btn"
+                disabled={activeStep === 3 && !formData.evaluationCompleted}
               >
-                Next
+                {activeStep === 3 ? 'Complete Evaluation' : 'Next'}
               </Button>
             )}
           </Box>

@@ -4,6 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
+const { sanitizeInput, preventNoSQLInjection, preventPrototypePollution } = require('./middleware/sanitization');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
@@ -49,14 +50,20 @@ app.use(cors({
 app.use(express.json({ limit: process.env.MAX_FILE_SIZE ? `${process.env.MAX_FILE_SIZE}b` : '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
+// Input sanitization middleware - SRS SEC-02: Input Sanitation (MongoDB focused)
+app.use(sanitizeInput);
+app.use(preventNoSQLInjection);
+app.use(preventPrototypePollution);
+
+// Routes - Using SRS specified singular paths
 app.use('/api/auth', authLimiter, authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/profiles', profileRoutes);
-app.use('/api/goals', goalRoutes);
-app.use('/api/workouts', workoutRoutes);
-app.use('/api/exercises', exerciseRoutes);
-app.use('/api/programs', programRoutes);
+app.use('/user', userRoutes);
+app.use('/profile', profileRoutes);
+app.use('/goal', goalRoutes);
+app.use('/workout', workoutRoutes);
+app.use('/exercises', exerciseRoutes); // SRS specifies /exercises for listing
+app.use('/exercise', exerciseRoutes); // Individual exercise operations use /exercise
+app.use('/program', programRoutes);
 app.use('/api/2fa', twoFactorRoutes);
 
 // Admin routes (with stricter rate limiting)

@@ -16,6 +16,14 @@ const auth = async (req, res, next) => {
       return res.status(401).json({ message: 'Invalid token or user not found.' });
     }
 
+    // SRS SEC-01: 2FA should be enforced
+    if (!user.twoFactorEnabled && req.path !== '/api/2fa/setup' && req.path !== '/api/2fa/verify') {
+      return res.status(401).json({ 
+        message: '2FA is required. Please set up two-factor authentication.',
+        requiresTwoFactorSetup: true 
+      });
+    }
+
     req.user = user;
     next();
   } catch (error) {

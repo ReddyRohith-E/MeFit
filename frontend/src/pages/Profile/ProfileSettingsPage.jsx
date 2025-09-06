@@ -81,8 +81,9 @@ import {
   Speed
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
-import { UniversalThemeContext } from '../../contexts/UniversalThemeContext';
+import TwoFactorSetup from '../../components/Security/TwoFactorSetup';
 import ContributorRequestCard from '../../components/Profile/ContributorRequestCard';
+import { UniversalThemeContext } from '../../contexts/UniversalThemeContext';
 
 // Profile Header Component
 const ProfileHeader = ({ userProfile, onPhotoChange }) => {
@@ -431,33 +432,7 @@ const SecurityTab = () => {
         {/* Two-Factor Authentication */}
         <Card sx={{ mt: 2 }}>
           <CardContent>
-            <Typography variant="h6" fontWeight={600} gutterBottom>
-              Two-Factor Authentication
-            </Typography>
-            
-            <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-              <Box>
-                <Typography variant="body1">Enhanced Security</Typography>
-                <Typography variant="body2" color="textSecondary">
-                  Protect your account with 2FA
-                </Typography>
-              </Box>
-              <Switch
-                checked={twoFactorEnabled}
-                onChange={(e) => setTwoFactorEnabled(e.target.checked)}
-              />
-            </Box>
-            
-            {twoFactorEnabled && (
-              <Box>
-                <Button variant="outlined" startIcon={<PhoneAndroid />} sx={{ mr: 1 }}>
-                  Setup SMS
-                </Button>
-                <Button variant="outlined" startIcon={<VpnKey />}>
-                  Setup App
-                </Button>
-              </Box>
-            )}
+            <TwoFactorSetup />
           </CardContent>
         </Card>
       </Grid>

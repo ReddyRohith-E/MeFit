@@ -39,15 +39,62 @@ const updateUserValidation = [
     .withMessage('Please provide a valid email')
 ];
 
-// GET /api/users (redirect to current user)
+// GET /user - SRS API-03: Should return 303 See Other to user's own profile
 router.get('/', auth, (req, res) => {
-  res.status(303).json({
-    message: 'Redirecting to current user',
-    location: `/api/users/${req.user._id}`
-  });
+  res.status(303).header('Location', `${req.protocol}://${req.get('host')}/user/${req.user._id}`).end();
 });
 
-// GET /api/users/all (admin only)
+// POST /user - SRS API-03: Register a new user (moved from auth)
+router.post('/', async (req, res) => {
+  try {
+    const { email, password, firstName, lastName } = req.body;
+
+    // Input validation
+    if (!email || !password || !firstName || !lastName) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists with this email' });
+    }
+
+    // Create new user
+    const user = new User({
+      email: email.toLowerCase(),
+      password,
+      firstName: firstName.trim(),
+      lastName: lastName.trim()
+    });
+
+    await user.save();
+
+    // Return created user (without sensitive data)
+    res.status(201).json({
+      message: 'User created successfully',
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isAdmin: user.isAdmin,
+        isContributor: user.isContributor,
+        hasProfile: false
+      }
+    });
+  } catch (error) {
+    console.error('User creation error:', error);
+    res.status(500).json({ message: 'User creation failed' });
+  }
+});
+
+// Admin-only routes (keeping legacy functionality)
+// GET /user/all (admin only) - for admin panel
 router.get('/all', auth, admin, async (req, res) => {
   try {
     const { page = 1, limit = 10, search = '', role = 'all' } = req.query;
@@ -93,10 +140,10 @@ router.get('/all', auth, admin, async (req, res) => {
   }
 });
 
-// GET /api/users/:userId
-router.get('/:userId', auth, selfOrAdmin, async (req, res) => {
+// GET /user/:user_id - SRS API-03: Returns information pertaining to the referenced user
+router.get('/:user_id', auth, selfOrAdmin, async (req, res) => {
   try {
-    const user = await User.findById(req.params.userId)
+    const user = await User.findById(req.params.user_id)
       .select('-password -twoFactorSecret');
 
     if (!user || !user.isActive) {
@@ -118,11 +165,18 @@ router.get('/:userId', auth, selfOrAdmin, async (req, res) => {
   }
 });
 
-// PATCH /api/users/:userId
-router.patch('/:userId', auth, selfOrAdmin, updateUserValidation, validate, async (req, res) => {
+// PATCH /user/:user_id - SRS API-03: Makes a partial update to the user object
+router.patch('/:user_id', auth, selfOrAdmin, updateUserValidation, validate, async (req, res) => {
   try {
     const { firstName, lastName, email, isContributor, isAdmin } = req.body;
-    const userId = req.params.userId;
+    const userId = req.params.user_id;
+
+    // Check for password update attempt - should return 400 Bad Request per SRS
+    if (req.body.password || req.body.passwordHash) {
+      return res.status(400).json({ 
+        message: 'Password updates should be done using the update_password endpoint' 
+      });
+    }
 
     // Check if user exists
     const user = await User.findById(userId);
@@ -130,7 +184,7 @@ router.patch('/:userId', auth, selfOrAdmin, updateUserValidation, validate, asyn
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Only admins can change admin/contributor status
+    // Only admins can change admin/contributor status - return 403 Forbidden per SRS
     if ((isContributor !== undefined || isAdmin !== undefined) && !req.user.isAdmin) {
       return res.status(403).json({ message: 'Only admins can change user roles' });
     }
@@ -167,11 +221,37 @@ router.patch('/:userId', auth, selfOrAdmin, updateUserValidation, validate, asyn
   }
 });
 
-// POST /api/users/:userId/update-password
-router.post('/:userId/update-password', auth, selfOrAdmin, updatePasswordValidation, validate, async (req, res) => {
+// DELETE /user/:user_id - SRS API-03: Deletes (cascading) a user. Self and admin only.
+router.delete('/:user_id', auth, selfOrAdmin, async (req, res) => {
+  try {
+    const userId = req.params.user_id;
+
+    const user = await User.findById(userId);
+    if (!user || !user.isActive) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Cascading delete - remove related data
+    await Profile.findOneAndDelete({ user: userId });
+    await Notification.deleteMany({ userId: userId });
+    
+    // Soft delete user
+    user.isActive = false;
+    user.email = `deleted_${Date.now()}_${user.email}`;
+    await user.save();
+
+    res.status(204).end(); // 204 No Content per SRS
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ message: 'Failed to delete user' });
+  }
+});
+
+// POST /user/:user_id/update_password - SRS API-03: Update a user's password
+router.post('/:user_id/update_password', auth, selfOrAdmin, updatePasswordValidation, validate, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    const userId = req.params.userId;
+    const userId = req.params.user_id;
 
     const user = await User.findById(userId);
     if (!user || !user.isActive) {
@@ -195,17 +275,17 @@ router.post('/:userId/update-password', auth, selfOrAdmin, updatePasswordValidat
     user.password = newPassword;
     await user.save();
 
-    res.json({ message: 'Password updated successfully' });
+    res.status(204).end(); // 204 No Content per SRS
   } catch (error) {
     console.error('Update password error:', error);
     res.status(500).json({ message: 'Failed to update password' });
   }
 });
 
-// POST /api/users/:userId/request-contributor
-router.post('/:userId/request-contributor', auth, selfOrAdmin, async (req, res) => {
+// POST /user/:user_id/request-contributor
+router.post('/:user_id/request-contributor', auth, selfOrAdmin, async (req, res) => {
   try {
-    const userId = req.params.userId;
+    const userId = req.params.user_id;
     const { applicationText } = req.body;
 
     if (!applicationText || applicationText.trim().length < 50) {
@@ -247,14 +327,14 @@ router.post('/:userId/request-contributor', auth, selfOrAdmin, async (req, res) 
       }
     });
 
-    res.json({ message: 'Contributor request submitted successfully' });
+    res.status(201).json({ message: 'Contributor request submitted successfully' });
   } catch (error) {
     console.error('Request contributor error:', error);
     res.status(500).json({ message: 'Failed to submit contributor request' });
   }
 });
 
-// GET /api/users/contributor-requests (admin only)
+// GET /user/contributor-requests/pending (admin only)
 router.get('/contributor-requests/pending', auth, admin, async (req, res) => {
   try {
     const users = await User.find({ 
@@ -269,11 +349,11 @@ router.get('/contributor-requests/pending', auth, admin, async (req, res) => {
   }
 });
 
-// PATCH /api/users/:userId/approve-contributor (admin only)
-router.patch('/:userId/approve-contributor', auth, admin, async (req, res) => {
+// PATCH /user/:user_id/approve-contributor (admin only)
+router.patch('/:user_id/approve-contributor', auth, admin, async (req, res) => {
   try {
     const { approved } = req.body;
-    const userId = req.params.userId;
+    const userId = req.params.user_id;
 
     const user = await User.findById(userId);
     if (!user || !user.isActive) {
@@ -296,25 +376,26 @@ router.patch('/:userId/approve-contributor', auth, admin, async (req, res) => {
   }
 });
 
-// DELETE /api/users/:userId
-router.delete('/:userId', auth, selfOrAdmin, async (req, res) => {
+// DELETE /user/:user_id
+router.delete('/:user_id', auth, selfOrAdmin, async (req, res) => {
   try {
-    const userId = req.params.userId;
+    const userId = req.params.user_id;
 
     const user = await User.findById(userId);
     if (!user || !user.isActive) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Soft delete
+    // Cascading delete - remove related data
+    await Profile.findOneAndDelete({ user: userId });
+    await Notification.deleteMany({ userId: userId });
+    
+    // Soft delete user
     user.isActive = false;
     user.email = `deleted_${Date.now()}_${user.email}`;
     await user.save();
 
-    // Also delete profile if exists
-    await Profile.findOneAndDelete({ user: userId });
-
-    res.json({ message: 'User deleted successfully' });
+    res.status(204).end(); // 204 No Content per SRS
   } catch (error) {
     console.error('Delete user error:', error);
     res.status(500).json({ message: 'Failed to delete user' });

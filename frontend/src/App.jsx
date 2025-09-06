@@ -17,11 +17,16 @@ import CreateGoal from './pages/Goals/CreateGoal.jsx';
 import GoalDetail from './pages/Goals/GoalDetail.jsx';
 import Workouts from './pages/Workouts/Workouts.jsx';
 import WorkoutDetail from './pages/Workouts/WorkoutDetail.jsx';
+import WorkoutManagement from './pages/Workouts/WorkoutManagement.jsx';
 import Exercises from './pages/Exercises/Exercises.jsx';
 import ExerciseDetail from './pages/Exercises/ExerciseDetail.jsx';
+import ExerciseManagement from './pages/Exercises/ExerciseManagement.jsx';
 import Programs from './pages/Programs/Programs.jsx';
 import ProgramDetail from './pages/Programs/ProgramDetail.jsx';
 import ContributorArea from './pages/Contributor/ContributorArea.jsx';
+import ContributorExercises from './pages/Contributor/ContributorExercises.jsx';
+import ContributorWorkouts from './pages/Contributor/ContributorWorkouts.jsx';
+import ContributorPrograms from './pages/Contributor/ContributorPrograms.jsx';
 
 // Admin components
 import AdminLogin from './pages/Admin/AdminLogin.jsx';
@@ -73,12 +78,17 @@ function App() {
                 <Route path="goals/create" element={<CreateGoal />} />
                 <Route path="goals/:id" element={<GoalDetail />} />
                 <Route path="workouts" element={<Workouts />} />
+                <Route path="workouts/manage" element={<WorkoutManagement />} />
                 <Route path="workouts/:id" element={<WorkoutDetail />} />
                 <Route path="exercises" element={<Exercises />} />
+                <Route path="exercises/manage" element={<ExerciseManagement />} />
                 <Route path="exercises/:id" element={<ExerciseDetail />} />
                 <Route path="programs" element={<Programs />} />
                 <Route path="programs/:id" element={<ProgramDetail />} />
                 <Route path="contributor" element={<ContributorArea />} />
+                <Route path="contributor/exercises" element={<ContributorExercises />} />
+                <Route path="contributor/workouts" element={<ContributorWorkouts />} />
+                <Route path="contributor/programs" element={<ContributorPrograms />} />
               </Route>
 
               {/* Admin Routes */}

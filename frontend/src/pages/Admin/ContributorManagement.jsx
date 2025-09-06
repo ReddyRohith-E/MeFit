@@ -49,13 +49,9 @@ import {
   TrendingUp,
   Assignment,
   FitnessCenter,
-  Email,
-  Phone,
-  LocationOn,
-  CalendarToday,
-  Notifications,
-  NotificationsActive
 } from '@mui/icons-material';
+
+import AdminContributorRequestCard from '../../components/Admin/AdminContributorRequestCard';
 import { adminApiService, handleApiError } from '../../services/adminAPI';
 import ContributorRequestsManager from '../../components/Admin/ContributorRequestsManager';
 

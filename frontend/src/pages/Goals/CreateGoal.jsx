@@ -16,6 +16,8 @@ import {
   Autocomplete,
   Switch,
   FormControlLabel,
+  Grid,
+  Alert,
 } from '@mui/material';
 
 import {
@@ -29,6 +31,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import LoadingSpinner from '../../components/Common/LoadingSpinner.jsx';
+import GoalRealismValidator from '../../components/Goals/GoalRealismValidator.jsx';
 import { goalsAPI, workoutsAPI } from '../../utils/api.js';
 import './CreateGoal.css';
 
@@ -52,9 +55,13 @@ const CreateGoal = () => {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
+  const [userProfile, setUserProfile] = useState(null);
+  const [userEvaluation, setUserEvaluation] = useState(null);
+  const [showRealismCheck, setShowRealismCheck] = useState(false);
 
   useEffect(() => {
     fetchWorkouts();
+    fetchUserProfile();
     if (isEditing) {
       fetchGoal();
     }
@@ -66,6 +73,24 @@ const CreateGoal = () => {
       setAvailableWorkouts(response.data.workouts);
     } catch (error) {
       console.error('Error fetching workouts:', error);
+    }
+  };
+
+  const fetchUserProfile = async () => {
+    try {
+      const profileResponse = await fetch('/api/profile/current', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (profileResponse.ok) {
+        const profileData = await profileResponse.json();
+        setUserProfile(profileData.profile);
+        setUserEvaluation(profileData.profile.fitnessEvaluation);
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
     }
   };
 
@@ -183,6 +208,11 @@ const CreateGoal = () => {
       ...formData,
       workouts: newValue,
     });
+    
+    // Trigger realism check when workouts change
+    if (newValue.length > 0 && userProfile && userEvaluation) {
+      setShowRealismCheck(true);
+    }
   };
 
   if (loading) return <LoadingSpinner />;
@@ -329,6 +359,17 @@ const CreateGoal = () => {
                     )}
                   />
                 </Grid>
+
+                {/* Goal Realism Checker - SRS FE-04 */}
+                {showRealismCheck && userProfile && userEvaluation && formData.workouts.length > 0 && (
+                  <Grid item xs={12}>
+                    <GoalRealismValidator
+                      goal={formData}
+                      userProfile={userProfile}
+                      userEvaluation={userEvaluation}
+                    />
+                  </Grid>
+                )}
 
                 {errors.submit && (
                   <Grid item xs={12}>

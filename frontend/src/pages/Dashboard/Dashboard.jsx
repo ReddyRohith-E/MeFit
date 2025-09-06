@@ -1,379 +1,162 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  LinearProgress,
-  Button,
-  Chip,
-  Alert,
-  CircularProgress,
-  Divider,
-  IconButton,
-  Grid,
-  } from '@mui/material';
-
-import {
-  FitnessCenter,
-  TrendingUp,
-  CalendarToday,
-  Timer,
-  LocalFireDepartment,
-  Add,
-  Refresh
-} from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { Box, Typography, Card, CardContent, Alert, Button, LinearProgress } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import LoadingSpinner from '../../components/Common/LoadingSpinner.jsx';
-import api from '../../utils/api.js';
-import './Dashboard.css';
+import { useNavigate } from 'react-router-dom';
+import EnhancedDashboard from '../../components/Common/EnhancedDashboard.jsx';
+import { Security, Person, EmojiEvents } from '@mui/icons-material';
 
 const Dashboard = () => {
-  const navigate = useNavigate();
   const { user } = useAuth();
-  const [currentDate] = useState(new Date());
-  const [dashboardData, setDashboardData] = useState(null);
+  const navigate = useNavigate();
+  const [profileStatus, setProfileStatus] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   useEffect(() => {
-    loadDashboardData();
+    checkUserComplianceStatus();
   }, []);
 
-  const loadDashboardData = async () => {
+  const checkUserComplianceStatus = async () => {
     try {
-      setLoading(true);
-      setError('');
+      const token = localStorage.getItem('token');
       
-      // Load current goals and recent activities
-      const [goalsResponse, workoutsResponse] = await Promise.all([
-        api.get('/goals'),
-        api.get('/workouts')
-      ]);
-
-      const goals = goalsResponse.data.goals || [];
-      const workouts = workoutsResponse.data.workouts || [];
-      
-      // Calculate dashboard statistics
-      const currentGoal = goals.find(goal => 
-        new Date(goal.startDate) <= new Date() && 
-        new Date(goal.endDate) >= new Date()
-      );
-
-      const thisWeekStart = new Date();
-      thisWeekStart.setDate(thisWeekStart.getDate() - thisWeekStart.getDay());
-      thisWeekStart.setHours(0, 0, 0, 0);
-
-      const thisWeekWorkouts = workouts.filter(workout => 
-        new Date(workout.date) >= thisWeekStart
-      );
-
-      const completedWorkouts = thisWeekWorkouts.filter(workout => workout.completed);
-
-      const stats = {
-        totalGoals: goals.length,
-        activeGoals: goals.filter(goal => 
-          new Date(goal.startDate) <= new Date() && 
-          new Date(goal.endDate) >= new Date()
-        ).length,
-        completedGoals: goals.filter(goal => goal.achieved).length,
-        weeklyWorkouts: thisWeekWorkouts.length,
-        completedWeeklyWorkouts: completedWorkouts.length,
-        totalWorkouts: workouts.length
-      };
-
-      setDashboardData({
-        currentGoal,
-        stats,
-        recentWorkouts: workouts.slice(0, 5),
-        upcomingGoals: goals
-          .filter(goal => new Date(goal.startDate) > new Date())
-          .slice(0, 3)
+      // Check if user has profile - SRS FE-11 requirement
+      const profileResponse = await fetch('/profile', {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
-    } catch (err) {
-      console.error('Failed to load dashboard data:', err);
-      setError('Failed to load dashboard data. Please try again later.');
+      
+      // Check 2FA status - SRS SEC-01 requirement
+      const twoFactorResponse = await fetch('/user/2fa/status', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      const profile = profileResponse.ok ? await profileResponse.json() : null;
+      const twoFactorStatus = twoFactorResponse.ok ? await twoFactorResponse.json() : { enabled: false };
+      
+      setProfileStatus({
+        hasProfile: !!profile,
+        has2FA: twoFactorStatus.enabled,
+        profile: profile
+      });
+    } catch (error) {
+      console.error('Error checking compliance status:', error);
+      setProfileStatus({
+        hasProfile: false,
+        has2FA: false,
+        profile: null
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const getCurrentDayOfWeek = () => {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    return days[currentDate.getDay()];
+  // SRS FE-11: User must have profile to use system
+  const handleCreateProfile = () => {
+    navigate('/app/profile/create');
   };
 
-  const formatDate = (date) => {
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  const getProgressPercentage = (current, target) => {
-    if (!target || target === 0) return 0;
-    return Math.min((current / target) * 100, 100);
+  // SRS SEC-01: 2FA should be enforced
+  const handleSetup2FA = () => {
+    navigate('/app/profile/settings');
   };
 
   if (loading) {
-    return <LoadingSpinner message="Loading your dashboard..." />;
-  }
-
-  if (error) {
     return (
-      <Box className="dashboard-error">
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-        <Button variant="contained" onClick={loadDashboardData} startIcon={<Refresh />}>
-          Retry
-        </Button>
+      <Box sx={{ p: 3 }}>
+        <LinearProgress />
+        <Typography sx={{ mt: 2 }}>Checking system requirements...</Typography>
       </Box>
     );
   }
 
-  const { currentGoal, stats, recentWorkouts, upcomingGoals } = dashboardData || {};
+  // SRS Compliance Check: Block dashboard access if requirements not met
+  if (!profileStatus?.hasProfile) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Profile Required - SRS Compliance
+          </Typography>
+          <Typography variant="body1" gutterBottom>
+            According to SRS requirement FE-11, a user must have a profile to use the system. 
+            Please create your profile to continue.
+          </Typography>
+        </Alert>
+        
+        <Card sx={{ maxWidth: 600, mx: 'auto', textAlign: 'center' }}>
+          <CardContent sx={{ p: 4 }}>
+            <Person sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
+            <Typography variant="h5" gutterBottom>
+              Create Your Fitness Profile
+            </Typography>
+            <Typography variant="body1" color="textSecondary" paragraph>
+              Set up your fitness profile with personal details and fitness evaluation to get started with MeFit.
+            </Typography>
+            <Button 
+              variant="contained" 
+              size="large" 
+              onClick={handleCreateProfile}
+              startIcon={<Person />}
+            >
+              Create Profile Now
+            </Button>
+          </CardContent>
+        </Card>
+      </Box>
+    );
+  }
+
+  if (!profileStatus?.has2FA) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error" sx={{ mb: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Two-Factor Authentication Required - SRS Compliance
+          </Typography>
+          <Typography variant="body1" gutterBottom>
+            According to SRS requirement SEC-01, 2FA should be enforced. 
+            Please set up two-factor authentication to continue using the system.
+          </Typography>
+        </Alert>
+        
+        <Card sx={{ maxWidth: 600, mx: 'auto', textAlign: 'center' }}>
+          <CardContent sx={{ p: 4 }}>
+            <Security sx={{ fontSize: 64, color: 'error.main', mb: 2 }} />
+            <Typography variant="h5" gutterBottom>
+              Security Setup Required
+            </Typography>
+            <Typography variant="body1" color="textSecondary" paragraph>
+              MeFit requires two-factor authentication for enhanced security. This helps protect your fitness data and personal information.
+            </Typography>
+            <Button 
+              variant="contained" 
+              color="error"
+              size="large" 
+              onClick={handleSetup2FA}
+              startIcon={<Security />}
+            >
+              Set Up 2FA Now
+            </Button>
+          </CardContent>
+        </Card>
+      </Box>
+    );
+  }
 
   return (
-    <Box className="dashboard">
-      <div className="dashboard-header">
-        <Typography variant="h4" className="dashboard-title">
+    <Box sx={{ p: 3 }}>
+      {/* SRS FE-03: Goal Dashboard with large progress component */}
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h4" component="h1" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+          <EmojiEvents sx={{ mr: 2, color: 'primary.main' }} />
           Welcome back, {user?.firstName || user?.username}!
         </Typography>
-        <IconButton onClick={loadDashboardData} className="dashboard-refresh">
-          <Refresh />
-        </IconButton>
-      </div>
-
-      {/* Current Date and Day */}
-      <Card className="dashboard-date-card">
-        <CardContent>
-          <Box className="dashboard-date-content">
-            <CalendarToday className="dashboard-date-icon" />
-            <Box>
-              <Typography variant="h5" className="dashboard-day">
-                {getCurrentDayOfWeek()}
-              </Typography>
-              <Typography variant="body1" className="dashboard-date">
-                {formatDate(currentDate)}
-              </Typography>
-            </Box>
-          </Box>
-        </CardContent>
-      </Card>
-
-      <Grid container spacing={3} className="dashboard-stats">
-        {/* Quick Stats */}
-        <Grid item xs={12} sm={6} md={3}>
-          <Card className="dashboard-stat-card">
-            <CardContent>
-              <Box className="dashboard-stat-content">
-                <FitnessCenter className="dashboard-stat-icon primary" />
-                <Box>
-                  <Typography variant="h4" className="dashboard-stat-number">
-                    {stats?.activeGoals || 0}
-                  </Typography>
-                  <Typography variant="body2" className="dashboard-stat-label">
-                    Active Goals
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card className="dashboard-stat-card">
-            <CardContent>
-              <Box className="dashboard-stat-content">
-                <TrendingUp className="dashboard-stat-icon success" />
-                <Box>
-                  <Typography variant="h4" className="dashboard-stat-number">
-                    {stats?.completedGoals || 0}
-                  </Typography>
-                  <Typography variant="body2" className="dashboard-stat-label">
-                    Completed Goals
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card className="dashboard-stat-card">
-            <CardContent>
-              <Box className="dashboard-stat-content">
-                <Timer className="dashboard-stat-icon warning" />
-                <Box>
-                  <Typography variant="h4" className="dashboard-stat-number">
-                    {stats?.completedWeeklyWorkouts || 0}
-                  </Typography>
-                  <Typography variant="body2" className="dashboard-stat-label">
-                    This Week
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card className="dashboard-stat-card">
-            <CardContent>
-              <Box className="dashboard-stat-content">
-                <LocalFireDepartment className="dashboard-stat-icon error" />
-                <Box>
-                  <Typography variant="h4" className="dashboard-stat-number">
-                    {stats?.totalWorkouts || 0}
-                  </Typography>
-                  <Typography variant="body2" className="dashboard-stat-label">
-                    Total Workouts
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      <Grid container spacing={3} className="dashboard-content">
-        {/* Current Goal */}
-        <Grid item xs={12} md={8}>
-          <Card className="dashboard-goal-card">
-            <CardContent>
-              <Typography variant="h6" className="dashboard-section-title">
-                Current Goal
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-              
-              {currentGoal ? (
-                <Box className="dashboard-current-goal">
-                  <Box className="dashboard-goal-header">
-                    <Typography variant="h6" className="dashboard-goal-title">
-                      {currentGoal.title}
-                    </Typography>
-                    <Chip 
-                      label={currentGoal.type} 
-                      color="primary" 
-                      variant="outlined"
-                      size="small"
-                    />
-                  </Box>
-                  
-                  <Typography variant="body2" className="dashboard-goal-description">
-                    {currentGoal.description}
-                  </Typography>
-                  
-                  <Box className="dashboard-goal-progress">
-                    <Box className="dashboard-progress-header">
-                      <Typography variant="body2">
-                        Progress: {currentGoal.currentValue || 0} / {currentGoal.targetValue}
-                      </Typography>
-                      <Typography variant="body2" className="dashboard-progress-percentage">
-                        {Math.round(getProgressPercentage(currentGoal.currentValue, currentGoal.targetValue))}%
-                      </Typography>
-                    </Box>
-                    <LinearProgress 
-                      variant="determinate" 
-                      value={getProgressPercentage(currentGoal.currentValue, currentGoal.targetValue)}
-                      className="dashboard-progress-bar"
-                    />
-                  </Box>
-                  
-                  <Box className="dashboard-goal-actions">
-                    <Button 
-                      variant="contained" 
-                      onClick={() => navigate(`/goals/${currentGoal._id}`)}
-                      size="small"
-                    >
-                      View Details
-                    </Button>
-                    <Button 
-                      variant="outlined" 
-                      onClick={() => navigate('/workouts')}
-                      size="small"
-                    >
-                      Log Workout
-                    </Button>
-                  </Box>
-                </Box>
-              ) : (
-                <Box className="dashboard-no-goal">
-                  <Typography variant="body1" color="textSecondary" className="dashboard-no-goal-text">
-                    No active goals found. Create your first goal to get started!
-                  </Typography>
-                  <Button 
-                    variant="contained" 
-                    onClick={() => navigate('/goals/create')}
-                    startIcon={<Add />}
-                    className="dashboard-create-goal-btn"
-                  >
-                    Create Goal
-                  </Button>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Quick Actions */}
-        <Grid item xs={12} md={4}>
-          <Card className="dashboard-actions-card">
-            <CardContent>
-              <Typography variant="h6" className="dashboard-section-title">
-                Quick Actions
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-              
-              <Box className="dashboard-quick-actions">
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  onClick={() => navigate('/goals/create')}
-                  startIcon={<Add />}
-                  className="dashboard-action-btn"
-                >
-                  Create New Goal
-                </Button>
-                
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  onClick={() => navigate('/workouts')}
-                  startIcon={<FitnessCenter />}
-                  className="dashboard-action-btn"
-                >
-                  Log Workout
-                </Button>
-                
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  onClick={() => navigate('/exercises')}
-                  startIcon={<FitnessCenter />}
-                  className="dashboard-action-btn"
-                >
-                  Browse Exercises
-                </Button>
-                
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  onClick={() => navigate('/programs')}
-                  startIcon={<FitnessCenter />}
-                  className="dashboard-action-btn"
-                >
-                  View Programs
-                </Button>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+        <Typography variant="h6" color="textSecondary">
+          Track your weekly fitness goals and monitor your progress
+        </Typography>
+      </Box>
+      
+      {/* Enhanced Dashboard Component - SRS Compliant */}
+      <EnhancedDashboard />
     </Box>
   );
 };
