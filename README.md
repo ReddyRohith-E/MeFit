@@ -211,16 +211,6 @@ MONGODB_URI=mongodb://localhost:27017/mefit
 JWT_SECRET=your_super_secure_jwt_secret_key_here
 JWT_EXPIRE=7d
 FRONTEND_URL=http://localhost:3000
-
-# Email Configuration (Optional)
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USER=your-email@gmail.com
-EMAIL_PASS=your-app-password
-
-# Admin Configuration
-ADMIN_EMAIL=admin@mefit.com
-ADMIN_PASSWORD=Admin123!
 ```
 
 #### Frontend Environment Setup
