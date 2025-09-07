@@ -30,6 +30,8 @@ import ContributorPrograms from './pages/Contributor/ContributorPrograms.jsx';
 
 // Admin components
 import AdminLogin from './pages/Admin/AdminLogin.jsx';
+import AdminTokenLogin from './pages/Admin/AdminTokenLogin.jsx';
+import AdminTokenSetter from './components/Admin/AdminTokenSetter.jsx';
 import AdminLayout from './components/Admin/AdminLayout.jsx';
 import AdminProtectedRoute from './components/Admin/AdminProtectedRoute.jsx';
 import AdminDashboard from './pages/Admin/AdminDashboard.jsx';
@@ -93,6 +95,8 @@ function App() {
 
               {/* Admin Routes */}
               <Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/admin/token-login" element={<AdminTokenLogin />} />
+              <Route path="/admin/debug" element={<AdminTokenSetter />} />
               
               <Route path="/admin" element={
                 <AdminProtectedRoute>

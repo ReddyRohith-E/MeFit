@@ -18,11 +18,13 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const initializeAuth = async () => {
-      if (token) {
+      const storedToken = localStorage.getItem('token');
+      if (storedToken) {
         try {
-          api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
           const response = await api.get('/auth/me');
           setUser(response.data.user);
+          setToken(storedToken);
         } catch (error) {
           console.error('Token validation failed:', error);
           localStorage.removeItem('token');
@@ -34,7 +36,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     initializeAuth();
-  }, [token]);
+  }, []);
 
   const login = async (email, password, twoFactorToken = null) => {
     try {
@@ -119,15 +121,17 @@ export const AuthProvider = ({ children }) => {
   };
 
   const hasRole = (role) => {
-    return user?.role === role;
+    if (role === 'Admin') return user?.isAdmin;
+    if (role === 'Contributor') return user?.isContributor || user?.isAdmin;
+    return false;
   };
 
   const isContributor = () => {
-    return user?.role === 'Contributor' || user?.role === 'Admin';
+    return user?.isContributor || user?.isAdmin;
   };
 
   const isAdmin = () => {
-    return user?.role === 'Admin';
+    return user?.isAdmin;
   };
 
   const forgotPassword = async (email, newPassword) => {
@@ -218,41 +222,6 @@ export const AuthProvider = ({ children }) => {
       };
     }
   };
-
-  // DEPRECATED: Token-based reset methods - no longer needed with direct password reset
-  /*
-  const resetPassword = async (token, password) => {
-    try {
-      const response = await api.post(`/auth/reset-password/${token}`, { password });
-      return { 
-        success: true, 
-        message: response.data.message 
-      };
-    } catch (error) {
-      console.error('Reset password failed:', error);
-      return { 
-        success: false, 
-        error: error.response?.data?.message || 'Failed to reset password' 
-      };
-    }
-  };
-
-  const validateResetToken = async (token) => {
-    try {
-      const response = await api.get(`/auth/reset-password/${token}`);
-      return { 
-        success: true, 
-        message: response.data.message 
-      };
-    } catch (error) {
-      console.error('Token validation failed:', error);
-      return { 
-        success: false, 
-        error: error.response?.data?.message || 'Invalid reset token' 
-      };
-    }
-  };
-  */
 
   const value = {
     user,

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // Create admin axios instance
 const adminAPI = axios.create({
@@ -18,9 +18,12 @@ const adminAuthAPI = axios.create({
 const addTokenInterceptor = (apiInstance) => {
   apiInstance.interceptors.request.use((config) => {
     const token = localStorage.getItem('adminToken');
+    console.log('AdminAPI: Adding token to request', token ? 'Token found' : 'No token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    console.log('AdminAPI: Request URL:', config.url);
+    console.log('AdminAPI: Request headers:', config.headers);
     return config;
   });
 };
@@ -28,12 +31,18 @@ const addTokenInterceptor = (apiInstance) => {
 // Handle responses and token expiration
 const addResponseInterceptor = (apiInstance) => {
   apiInstance.interceptors.response.use(
-    (response) => response,
+    (response) => {
+      console.log('AdminAPI: Response received', response.status, response.data);
+      return response;
+    },
     (error) => {
+      console.error('AdminAPI: Error response', error.response?.status, error.response?.data);
       if (error.response?.status === 401) {
+        console.log('AdminAPI: Unauthorized - removing token and redirecting');
         localStorage.removeItem('adminToken');
         localStorage.removeItem('adminUser');
-        window.location.href = '/admin/login';
+        // Don't auto-redirect here, let the component handle it
+        // window.location.href = '/admin/login';
       }
       return Promise.reject(error);
     }
@@ -49,20 +58,48 @@ addResponseInterceptor(adminAuthAPI);
 export const adminApiService = {
   // ============= AUTHENTICATION =============
   auth: {
-    login: (credentials) => 
-      adminAuthAPI.post('/login', credentials),
+    login: async (credentials) => {
+      try {
+        const response = await adminAuthAPI.post('/login', credentials);
+        if (response.data.success && response.data.data.token) {
+          adminTokenManager.setToken(response.data.data.token);
+          if (response.data.data.user) {
+            adminTokenManager.setUserData(response.data.data.user);
+          }
+        }
+        return response;
+      } catch (error) {
+        console.error('Admin login error:', error);
+        throw error;
+      }
+    },
     
     getMe: () => 
       adminAuthAPI.get('/me'),
     
-    logout: () => 
-      adminAuthAPI.post('/logout'),
+    logout: async () => {
+      try {
+        await adminAuthAPI.post('/logout');
+      } finally {
+        adminTokenManager.removeToken();
+      }
+    },
     
     changePassword: (passwordData) => 
       adminAuthAPI.patch('/change-password', passwordData),
 
     getQuickStats: () =>
       adminAuthAPI.get('/quick-stats'),
+
+    // Add a test connection method
+    testConnection: async () => {
+      try {
+        const response = await adminAPI.get('/dashboard/stats');
+        return { success: true, data: response.data };
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    }
   },
 
   // ============= DASHBOARD =============

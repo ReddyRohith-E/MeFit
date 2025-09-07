@@ -64,7 +64,7 @@ const EnhancedProfile = () => {
   const fetchProfile = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/profiles/me', {
+      const response = await fetch('/profile/me', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -101,7 +101,7 @@ const EnhancedProfile = () => {
   const handleSave = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/profiles/me', {
+      const response = await fetch('/profile/me', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

@@ -78,7 +78,7 @@ const CreateGoal = () => {
 
   const fetchUserProfile = async () => {
     try {
-      const profileResponse = await fetch('/api/profile/current', {
+      const profileResponse = await fetch('/profile/me', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

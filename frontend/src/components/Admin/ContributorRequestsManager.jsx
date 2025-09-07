@@ -57,7 +57,7 @@ const ContributorRequestsManager = () => {
   const fetchContributorRequests = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/admin/contributor-requests', {
+      const response = await fetch('/admin/contributor-requests', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -83,7 +83,7 @@ const ContributorRequestsManager = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/admin/contributor-requests/${userId}/${action}`, {
+      const response = await fetch(`/admin/contributor-requests/${userId}/${action}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,

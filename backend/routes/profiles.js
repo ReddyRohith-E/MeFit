@@ -137,6 +137,35 @@ const calculateFitnessEvaluation = (profile) => {
   };
 };
 
+// GET /profile/me - Get current user's profile
+router.get('/me', auth, async (req, res) => {
+  try {
+    const profile = await Profile.findOne({ user: req.user._id })
+      .populate('user', 'firstName lastName email profilePicture');
+
+    if (!profile) {
+      return res.status(404).json({ 
+        message: 'Profile not found',
+        hasProfile: false
+      });
+    }
+
+    // Calculate fitness evaluation
+    const evaluation = calculateFitnessEvaluation(profile);
+
+    res.json({
+      profile: {
+        ...profile.toJSON(),
+        evaluation
+      },
+      hasProfile: true
+    });
+  } catch (error) {
+    console.error('Get my profile error:', error);
+    res.status(500).json({ message: 'Failed to retrieve profile' });
+  }
+});
+
 // GET /profile/:profile_id - SRS API-04: Returns detail about current state of the users profile
 router.get('/:profile_id', auth, async (req, res) => {
   try {

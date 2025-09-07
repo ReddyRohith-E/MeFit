@@ -164,6 +164,70 @@ const calculateAge = (dateOfBirth) => {
   return age;
 };
 
+// GET /goal - SRS API-05: Get user goals with optional filters
+router.get('/', auth, async (req, res) => {
+  try {
+    const { status, type, page = 1, limit = 20 } = req.query;
+    
+    // Build filter object
+    const filter = { user: req.user._id };
+    
+    if (status) {
+      filter.status = status;
+    }
+    
+    if (type) {
+      filter.type = type;
+    }
+
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+    
+    // Get goals with pagination
+    const [goals, totalGoals] = await Promise.all([
+      Goal.find(filter)
+        .populate('program', 'name category')
+        .populate('workouts.workout', 'name type estimatedDuration')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Goal.countDocuments(filter)
+    ]);
+
+    // Calculate enhanced progress for each goal
+    const goalsWithProgress = goals.map(goal => {
+      const completedWorkouts = goal.workouts.filter(w => w.completed);
+      const progress = {
+        ...goal.progress,
+        completedWorkouts: completedWorkouts.length,
+        totalWorkouts: goal.workouts.length,
+        completionPercentage: goal.workouts.length > 0 ? 
+          Math.round((completedWorkouts.length / goal.workouts.length) * 100) : 0,
+        weeklyProgress: goal.getWeeklyProgress()
+      };
+      
+      return {
+        ...goal.toJSON(),
+        progress
+      };
+    });
+
+    res.json({
+      goals: goalsWithProgress,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(totalGoals / limit),
+        totalGoals,
+        hasNext: page * limit < totalGoals,
+        hasPrev: page > 1
+      }
+    });
+  } catch (error) {
+    console.error('Get goals error:', error);
+    res.status(500).json({ message: 'Failed to retrieve goals' });
+  }
+});
+
 // GET /goal/:goal_id - SRS API-05: Returns detail about current state of the users current goal
 router.get('/:goal_id', auth, async (req, res) => {
   try {

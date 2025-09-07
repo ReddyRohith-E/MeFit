@@ -14,17 +14,26 @@ const AdminProtectedRoute = ({ children }) => {
 
   const checkAuthentication = async () => {
     try {
+      console.log('AdminProtectedRoute: Checking authentication...');
+      
       // Check if token exists and is valid
       if (!adminTokenManager.isAuthenticated()) {
+        console.log('AdminProtectedRoute: No valid token found');
         setIsAuthenticated(false);
         setIsLoading(false);
         return;
       }
 
+      console.log('AdminProtectedRoute: Token found, verifying with server...');
+      
       // Verify token with server
-      await adminApiService.auth.getMe();
+      const response = await adminApiService.auth.getMe();
+      console.log('AdminProtectedRoute: Server verification successful', response.data);
+      
       setIsAuthenticated(true);
     } catch (error) {
+      console.error('AdminProtectedRoute: Token verification failed', error);
+      
       // Token is invalid or expired
       adminTokenManager.removeToken();
       setIsAuthenticated(false);
@@ -52,6 +61,7 @@ const AdminProtectedRoute = ({ children }) => {
   }
 
   if (!isAuthenticated) {
+    console.log('AdminProtectedRoute: Redirecting to admin login');
     // Redirect to login page with return URL
     return <Navigate to="/admin/login" state={{ from: location }} replace />;
   }

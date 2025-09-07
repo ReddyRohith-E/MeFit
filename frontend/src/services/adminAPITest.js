@@ -9,7 +9,7 @@ export const testAdminAPI = async () => {
     console.log('🔍 Testing Admin API Configuration...');
     
     // Test 1: Check API URL configuration
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
     console.log('✅ API URL:', apiUrl);
     
     // Test 2: Check if admin login endpoint is accessible

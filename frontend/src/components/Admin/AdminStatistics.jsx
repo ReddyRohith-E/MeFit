@@ -71,7 +71,7 @@ const AdminStatistics = () => {
   const fetchAdminStats = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/admin/statistics', {
+      const response = await fetch('/admin/statistics', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -92,7 +92,7 @@ const AdminStatistics = () => {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/admin/users', {
+      const response = await fetch('/admin/users', {
         headers: {
           'Authorization': `Bearer ${token}`
         }

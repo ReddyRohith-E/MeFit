@@ -137,3 +137,4 @@ uml_diagrams/
 *.py
 *.bat
 !README.md
+!backend/scripts/README.md

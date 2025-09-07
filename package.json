@@ -1,0 +1,51 @@
+{
+  "name": "mefit-workspace",
+  "version": "1.0.0",
+  "description": "MeFit - Comprehensive Fitness Tracking and Management Platform",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm run dev",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "cd backend && npm test",
+    "test:frontend": "cd frontend && npm test",
+    "build": "cd frontend && npm run build",
+    "verify": "node test-routes.js",
+    "setup": "npm run install:all && npm run verify",
+    "generate-admin-token": "cd backend && node scripts/generate-admin-token.js",
+    "seed-db": "cd backend && npm run seed",
+    "clean-db": "cd backend && npm run cleanDB"
+  },
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "keywords": [
+    "fitness",
+    "health",
+    "tracking",
+    "workout",
+    "goals",
+    "react",
+    "node.js",
+    "mongodb"
+  ],
+  "author": "MeFit Development Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ReddyRohith-E/MeFit.git"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "private": true
+}

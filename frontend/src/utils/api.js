@@ -38,10 +38,10 @@ api.interceptors.response.use(
 
 // Auth API
 export const authAPI = {
-  login: (credentials) => api.post('/api/auth/login', credentials),
-  register: (userData) => api.post('/api/auth/register', userData),
-  getMe: () => api.get('/api/auth/me'),
-  refreshToken: () => api.post('/api/auth/refresh'),
+  login: (credentials) => api.post('/auth/login', credentials),
+  register: (userData) => api.post('/auth/register', userData),
+  getMe: () => api.get('/auth/me'),
+  refreshToken: () => api.post('/auth/refresh'),
 };
 
 // Users API - SRS API-03 compliant
@@ -59,6 +59,7 @@ export const profilesAPI = {
   createProfile: (profileData) => api.post('/profile', profileData), // SRS POST /profile
   getProfile: (profileId) => api.get(`/profile/${profileId}`), // SRS GET /profile/profile_id
   getProfileByUser: (userId) => api.get(`/profile/user/${userId}`),
+  getMyProfile: () => api.get('/profile/me'), // Get current user's profile
   updateProfile: (profileId, profileData) => api.patch(`/profile/${profileId}`, profileData), // SRS PATCH /profile/profile_id
   deleteProfile: (profileId) => api.delete(`/profile/${profileId}`), // SRS DELETE /profile/profile_id
   getFitnessEvaluation: () => api.get('/profile/me/evaluation'),

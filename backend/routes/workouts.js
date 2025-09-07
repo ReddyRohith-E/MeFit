@@ -30,6 +30,81 @@ const workoutValidation = [
     .withMessage('Each set must have a valid exercise ID')
 ];
 
+// GET /workout - SRS API-06: Get workouts with optional filters
+router.get('/', auth, async (req, res) => {
+  try {
+    const { 
+      type, 
+      difficulty, 
+      duration, 
+      muscleGroup, 
+      equipment, 
+      page = 1, 
+      limit = 20,
+      search 
+    } = req.query;
+    
+    // Build filter object
+    const filter = { isActive: true };
+    
+    if (type) {
+      filter.type = type;
+    }
+    
+    if (difficulty) {
+      filter.difficulty = difficulty;
+    }
+    
+    if (duration) {
+      filter.estimatedDuration = { $lte: parseInt(duration) };
+    }
+    
+    if (muscleGroup) {
+      filter.targetMuscleGroups = { $in: [muscleGroup] };
+    }
+    
+    if (equipment) {
+      filter.equipment = { $in: [equipment] };
+    }
+    
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+    
+    // Get workouts with pagination
+    const [workouts, totalWorkouts] = await Promise.all([
+      Workout.find(filter)
+        .populate('contributor', 'firstName lastName')
+        .populate('sets.exercise', 'name targetMuscleGroup')
+        .select('name description type difficulty estimatedDuration targetMuscleGroups equipment rating')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Workout.countDocuments(filter)
+    ]);
+
+    res.json({
+      workouts,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(totalWorkouts / limit),
+        totalWorkouts,
+        hasNext: page * limit < totalWorkouts,
+        hasPrev: page > 1
+      }
+    });
+  } catch (error) {
+    console.error('Get workouts error:', error);
+    res.status(500).json({ message: 'Failed to retrieve workouts' });
+  }
+});
+
 // GET /workout/:workout_id - SRS API-06: Returns details of a workout
 router.get('/:workout_id', auth, async (req, res) => {
   try {

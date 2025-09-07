@@ -52,7 +52,7 @@ const TwoFactorSetup = ({ user, onComplete, onCancel }) => {
 
   const checkTwoFactorStatus = async () => {
     try {
-      const response = await fetch('/api/2fa/status', {
+      const response = await fetch('/2fa/status', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -69,7 +69,7 @@ const TwoFactorSetup = ({ user, onComplete, onCancel }) => {
     setError('');
 
     try {
-      const response = await fetch('/api/2fa/setup', {
+      const response = await fetch('/2fa/setup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -103,7 +103,7 @@ const TwoFactorSetup = ({ user, onComplete, onCancel }) => {
     setError('');
 
     try {
-      const response = await fetch('/api/2fa/verify', {
+      const response = await fetch('/2fa/verify', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -365,7 +365,7 @@ const TwoFactorDisable = ({ onComplete, loading, error }) => {
     setLocalError('');
 
     try {
-      const response = await fetch('/api/2fa/disable', {
+      const response = await fetch('/2fa/disable', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

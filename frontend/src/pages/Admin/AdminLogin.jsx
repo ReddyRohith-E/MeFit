@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Card,
@@ -29,6 +29,7 @@ import { ThemeToggleButton } from '../../components/Common/ThemeToggle.jsx';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const theme = useTheme();
   const [formData, setFormData] = useState({
     email: '',
@@ -37,6 +38,24 @@ const AdminLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Check if already authenticated
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (adminTokenManager.isAuthenticated()) {
+        try {
+          await adminApiService.auth.getMe();
+          // Redirect to intended page or dashboard
+          const from = location.state?.from?.pathname || '/admin/dashboard';
+          navigate(from, { replace: true });
+        } catch (error) {
+          // Token is invalid, remove it
+          adminTokenManager.removeToken();
+        }
+      }
+    };
+    checkAuth();
+  }, [navigate, location]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -61,20 +80,26 @@ const AdminLogin = () => {
 
     try {
       const response = await adminApiService.auth.login(formData);
-      const { token, user } = response.data.data;
-
-      // Store token and user data
-      adminTokenManager.setToken(token);
-      adminTokenManager.setUserData(user);
-
-      // Redirect to admin dashboard
-      navigate('/admin/dashboard');
+      
+      if (response.data.success) {
+        // Redirect to intended page or dashboard
+        const from = location.state?.from?.pathname || '/admin/dashboard';
+        navigate(from, { replace: true });
+      }
     } catch (err) {
+      console.error('Admin login error:', err);
       const errorMessage = handleApiError(err);
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleTestCredentials = () => {
+    setFormData({
+      email: 'admin@mefit.com',
+      password: 'Admin123!'
+    });
   };
 
   const togglePasswordVisibility = () => {
@@ -247,6 +272,68 @@ const AdminLogin = () => {
               >
                 {loading ? 'Signing In...' : 'Sign In to Admin Portal'}
               </Button>
+
+              <Button
+                fullWidth
+                variant="outlined"
+                onClick={handleTestCredentials}
+                disabled={loading}
+                sx={{
+                  mt: 2,
+                  py: 1.5,
+                  borderRadius: 2,
+                  fontSize: '1rem',
+                  fontWeight: 500,
+                  borderColor: 'primary.main',
+                  color: 'primary.main',
+                  '&:hover': {
+                    backgroundColor: 'primary.main',
+                    color: 'white',
+                    transform: 'translateY(-1px)',
+                    boxShadow: 4
+                  }
+                }}
+              >
+                Use Test Credentials
+              </Button>
+
+              <Button
+                fullWidth
+                variant="text"
+                onClick={() => navigate('/admin/token-login')}
+                disabled={loading}
+                sx={{
+                  mt: 1,
+                  py: 1,
+                  borderRadius: 2,
+                  color: 'text.secondary',
+                  '&:hover': {
+                    backgroundColor: 'grey.100',
+                    color: 'text.primary'
+                  }
+                }}
+              >
+                Use Token Login (Developers)
+              </Button>
+
+              <Button
+                fullWidth
+                variant="text"
+                onClick={() => navigate('/')}
+                disabled={loading}
+                sx={{
+                  mt: 1,
+                  py: 1,
+                  borderRadius: 2,
+                  color: 'text.secondary',
+                  '&:hover': {
+                    backgroundColor: 'grey.100',
+                    color: 'text.primary'
+                  }
+                }}
+              >
+                Back to Main Site
+              </Button>
             </form>
 
             <Divider sx={{ my: 3 }} />
@@ -254,11 +341,11 @@ const AdminLogin = () => {
             {/* Security Notice */}
             <Box
               sx={{
-                bgcolor: 'grey.50',
+                bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
                 p: 2,
                 borderRadius: 2,
                 border: '1px solid',
-                borderColor: 'grey.200'
+                borderColor: theme.palette.mode === 'dark' ? 'grey.700' : 'grey.200'
               }}
             >
               <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
@@ -267,6 +354,25 @@ const AdminLogin = () => {
               <Typography variant="caption" color="text.secondary">
                 This is a secure admin area. All access attempts are logged and monitored. 
                 Only authorized administrators should access this portal.
+              </Typography>
+            </Box>
+
+            {/* Developer Info */}
+            <Box
+              sx={{
+                bgcolor: theme.palette.mode === 'dark' ? 'primary.dark' : 'primary.light',
+                color: theme.palette.mode === 'dark' ? 'primary.contrastText' : 'primary.dark',
+                p: 2,
+                borderRadius: 2,
+                mt: 2
+              }}
+            >
+              <Typography variant="caption" display="block" gutterBottom>
+                <strong>Test Credentials:</strong>
+              </Typography>
+              <Typography variant="caption">
+                Email: admin@mefit.com<br />
+                Password: Admin123!
               </Typography>
             </Box>
           </CardContent>
