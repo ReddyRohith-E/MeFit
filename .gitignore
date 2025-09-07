@@ -138,3 +138,4 @@ uml_diagrams/
 *.bat
 !README.md
 !backend/scripts/README.md
+!USER_MANUAL.md
